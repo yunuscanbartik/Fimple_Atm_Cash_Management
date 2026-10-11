@@ -207,7 +207,7 @@ These are the points the assignment leaves open and what I decided.
 
 ## AI tools
 
-I built this with Claude Code, using Claude Sonnet 5.5 in an interactive session, step by step with a commit after each step. I used it to study the Dashboard API of my earlier project and follow its structure, to design and write the code, the migrations, the tests, the Docker setup and the Postman collection, and to draft this document. I decided the scope, accepted or changed the design choices and the assumptions above, and ran and read the results.
+I built this with Claude Code, using Claude Sonnet 5.5 in an interactive session, step by step with a commit after each step. I used it to study the Dashboard API of my earlier project and follow its structure, to design and write the code, the migrations, the tests, the Docker setup and the Postman collection, and to draft this document. Claude Code worked under the pinq-doq coding standards, the shared rule set of my team. It covers naming, layering, error handling, constants and comments, and the code and the review fixes follow it. I decided the scope, accepted or changed the design choices and the assumptions above, and ran and read the results.
 
 These things came out wrong the first time and were corrected.
 
