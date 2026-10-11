@@ -7,6 +7,7 @@ namespace Fimple.Atm.Infrastructure.Extensions
     public static class DependencyInjection
     {
         private const string ConnectionStringMissingMessage = "PostgreSQL connection string is missing.";
+        private const string DatabaseHealthCheckName = "postgresql";
 
         public static IServiceCollection AddPostgresDatabase(
             this IServiceCollection services,
@@ -19,6 +20,7 @@ namespace Fimple.Atm.Infrastructure.Extensions
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(postgresConnectionString));
+            services.AddHealthChecks().AddDbContextCheck<AppDbContext>(DatabaseHealthCheckName);
             return services;
         }
     }

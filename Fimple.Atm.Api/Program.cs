@@ -6,7 +6,7 @@ using Fimple.Atm.Infrastructure.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAtmControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddAtmOpenApi();
 builder.Services.AddPostgresDatabase(builder.Configuration.GetConnectionString("PostgreSql"));
 builder.Services.AddApplicationServices(builder.Configuration);
 
@@ -15,15 +15,12 @@ var app = builder.Build();
 app.MigrateDatabase();
 
 app.UseMiddleware<ExceptionMiddleware>();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseAtmOpenApi();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.MapAtmHealthChecks();
 app.Run();
 
 public partial class Program;
