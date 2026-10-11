@@ -1,0 +1,59 @@
+name: fimple-atm
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fimple_atm
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fimple-local-dev-password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fimple_atm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__PostgreSql: Host=postgres;Port=5432;Database=fimple_atm;Username=postgres;Password=${POSTGRES_PASSWORD:-fimple-local-dev-password}
+      CardHashing__Key: ${CARD_HASHING_KEY:-fimple-local-dev-card-hashing-key-change-me}
+      Hosting__UseHttpsRedirection: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    restart: unless-stopped
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__PostgreSql: Host=postgres;Port=5432;Database=fimple_atm;Username=postgres;Password=${POSTGRES_PASSWORD:-fimple-local-dev-password}
+      CardHashing__Key: ${CARD_HASHING_KEY:-fimple-local-dev-card-hashing-key-change-me}
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

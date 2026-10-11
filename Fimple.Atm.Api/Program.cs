@@ -17,7 +17,12 @@ app.MigrateDatabase();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAtmOpenApi();
 
-app.UseHttpsRedirection();
+var useHttpsRedirection = app.Configuration.GetValue("Hosting:UseHttpsRedirection", true);
+if (useHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 app.MapAtmHealthChecks();

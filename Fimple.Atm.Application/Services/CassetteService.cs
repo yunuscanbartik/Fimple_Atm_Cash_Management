@@ -148,7 +148,11 @@ namespace Fimple.Atm.Application.Services
         {
             if (cassette.Kind != CassetteKind.Recycling) return;
 
-            _cassetteMovementRecorder.GetOrAddContent(cassette, cassette.Currency.Value, cassette.Denomination.Value);
+            var currency = cassette.Currency
+                ?? throw new InvalidOperationException($"Recycling cassette {cassette.Position} has no currency configured.");
+            var denomination = cassette.Denomination
+                ?? throw new InvalidOperationException($"Recycling cassette {cassette.Position} has no denomination configured.");
+            _cassetteMovementRecorder.GetOrAddContent(cassette, currency, denomination);
         }
 
         private void LoadCashItem(AtmMachine atm, AtmModel.CashItem item, string? userName)

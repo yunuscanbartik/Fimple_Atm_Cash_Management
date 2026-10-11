@@ -20,15 +20,20 @@ namespace Fimple.Atm.Application.Services
                 return (requestedCurrency.Value, requestedDenomination.Value);
             }
 
-            var currencyMismatch = requestedCurrency != null && requestedCurrency != cassette.Currency;
-            var denominationMismatch = requestedDenomination != null && requestedDenomination != cassette.Denomination;
+            var cassetteCurrency = cassette.Currency
+                ?? throw new InvalidOperationException($"Recycling cassette {cassette.Position} has no currency configured.");
+            var cassetteDenomination = cassette.Denomination
+                ?? throw new InvalidOperationException($"Recycling cassette {cassette.Position} has no denomination configured.");
+
+            var currencyMismatch = requestedCurrency != null && requestedCurrency != cassetteCurrency;
+            var denominationMismatch = requestedDenomination != null && requestedDenomination != cassetteDenomination;
             if (currencyMismatch || denominationMismatch)
             {
                 throw new BusinessRuleException(ErrorCodes.CassetteNoteMismatch,
-                    $"Cassette {cassette.Position} only holds {cassette.Currency} {(int)cassette.Denomination.Value} notes.");
+                    $"Cassette {cassette.Position} only holds {cassetteCurrency} {(int)cassetteDenomination} notes.");
             }
 
-            return (cassette.Currency.Value, cassette.Denomination.Value);
+            return (cassetteCurrency, cassetteDenomination);
         }
 
         public static Denomination? ToDenomination(int? denominationValue)
