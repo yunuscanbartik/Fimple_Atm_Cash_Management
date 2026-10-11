@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Fimple.Atm.Api/Fimple.Atm.Api.csproj" />
+  <Project Path="Fimple.Atm.Application/Fimple.Atm.Application.csproj" />
+  <Project Path="Fimple.Atm.Domain/Fimple.Atm.Domain.csproj" />
+  <Project Path="Fimple.Atm.Infrastructure/Fimple.Atm.Infrastructure.csproj" />
+  <Project Path="Fimple.Atm.Tests/Fimple.Atm.Tests.csproj" />
+  <Project Path="Fimple.Atm.Worker/Fimple.Atm.Worker.csproj" />
+</Solution>

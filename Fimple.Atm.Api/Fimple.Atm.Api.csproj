@@ -10,4 +10,9 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Fimple.Atm.Application\Fimple.Atm.Application.csproj" />
+    <ProjectReference Include="..\Fimple.Atm.Infrastructure\Fimple.Atm.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
