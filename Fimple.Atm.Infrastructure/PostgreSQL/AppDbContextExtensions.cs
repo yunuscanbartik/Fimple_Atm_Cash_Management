@@ -7,10 +7,13 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
 {
     public static class AppDbContextExtensions
     {
+        private const string LOCK_ATM_SQL = $"SELECT \"Id\" AS \"Value\" FROM \"{TableNames.ATMS}\" WHERE \"Id\" = {{0}} FOR UPDATE";
+        private const string LOCK_CARD_SQL = "SELECT pg_advisory_xact_lock(hashtextextended({0}, 0))";
+
         public static async Task<AtmMachine> LoadAtmForUpdate(this AppDbContext appDbContext, Guid atmId)
         {
             var lockedAtmIds = await appDbContext.Database
-                .SqlQuery<Guid>($"SELECT \"Id\" AS \"Value\" FROM \"t_Atms\" WHERE \"Id\" = {atmId} FOR UPDATE")
+                .SqlQueryRaw<Guid>(LOCK_ATM_SQL, atmId)
                 .ToListAsync();
             if (lockedAtmIds.Count == 0)
             {
@@ -25,7 +28,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
 
         public static async Task LockCardForUpdate(this AppDbContext appDbContext, string cardHash)
         {
-            await appDbContext.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({cardHash}, 0))");
+            await appDbContext.Database.ExecuteSqlRawAsync(LOCK_CARD_SQL, cardHash);
         }
     }
 }

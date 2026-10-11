@@ -5,10 +5,7 @@ using Fimple.Atm.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddLocalSettings(builder.Environment.ContentRootPath);
-}
+builder.AddLocalSettingsInDevelopment();
 
 builder.Services.AddAtmControllers();
 builder.Services.AddAtmOpenApi();
@@ -22,12 +19,7 @@ app.MigrateDatabase();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAtmOpenApi();
 
-var useHttpsRedirection = app.Configuration.GetValue("Hosting:UseHttpsRedirection", true);
-if (useHttpsRedirection)
-{
-    app.UseHttpsRedirection();
-}
-
+app.UseHttpsRedirectionWhenEnabled();
 app.UseAuthorization();
 app.MapControllers();
 app.MapAtmHealthChecks();

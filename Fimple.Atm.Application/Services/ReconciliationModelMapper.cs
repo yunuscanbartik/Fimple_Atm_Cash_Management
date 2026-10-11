@@ -8,69 +8,81 @@ namespace Fimple.Atm.Application.Services
     {
         public static ReconciliationModel.ReconciliationItem ToReconciliationItem(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
+            var requiresApproval = RequiresApproval(reconciliation);
+            var lines = ToLineItems(reconciliation, cassettes);
+
             return new ReconciliationModel.ReconciliationItem
             {
                 Id = reconciliation.Id,
                 AtmId = reconciliation.AtmId,
                 Status = reconciliation.Status,
                 TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
-                RequiresApproval = RequiresApproval(reconciliation),
+                RequiresApproval = requiresApproval,
                 CreatedBy = reconciliation.CreatedBy,
                 CreatedAt = reconciliation.CreatedAt,
                 ApprovedBy = reconciliation.ApprovedBy,
                 ApprovedAt = reconciliation.ApprovedAt,
-                Lines = ToLineItems(reconciliation, cassettes)
+                Lines = lines
             };
         }
 
         public static ReconciliationModel.GetDetail.Return ToGetDetailReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
+            var requiresApproval = RequiresApproval(reconciliation);
+            var lines = ToLineItems(reconciliation, cassettes);
+
             return new ReconciliationModel.GetDetail.Return
             {
                 Id = reconciliation.Id,
                 AtmId = reconciliation.AtmId,
                 Status = reconciliation.Status,
                 TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
-                RequiresApproval = RequiresApproval(reconciliation),
+                RequiresApproval = requiresApproval,
                 CreatedBy = reconciliation.CreatedBy,
                 CreatedAt = reconciliation.CreatedAt,
                 ApprovedBy = reconciliation.ApprovedBy,
                 ApprovedAt = reconciliation.ApprovedAt,
-                Lines = ToLineItems(reconciliation, cassettes)
+                Lines = lines
             };
         }
 
         public static ReconciliationModel.Add.Return ToAddReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
+            var requiresApproval = RequiresApproval(reconciliation);
+            var lines = ToLineItems(reconciliation, cassettes);
+
             return new ReconciliationModel.Add.Return
             {
                 Id = reconciliation.Id,
                 AtmId = reconciliation.AtmId,
                 Status = reconciliation.Status,
                 TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
-                RequiresApproval = RequiresApproval(reconciliation),
+                RequiresApproval = requiresApproval,
                 CreatedBy = reconciliation.CreatedBy,
                 CreatedAt = reconciliation.CreatedAt,
                 ApprovedBy = reconciliation.ApprovedBy,
                 ApprovedAt = reconciliation.ApprovedAt,
-                Lines = ToLineItems(reconciliation, cassettes)
+                Lines = lines
             };
         }
 
         public static ReconciliationModel.Approve.Return ToApproveReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
+            var requiresApproval = RequiresApproval(reconciliation);
+            var lines = ToLineItems(reconciliation, cassettes);
+
             return new ReconciliationModel.Approve.Return
             {
                 Id = reconciliation.Id,
                 AtmId = reconciliation.AtmId,
                 Status = reconciliation.Status,
                 TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
-                RequiresApproval = RequiresApproval(reconciliation),
+                RequiresApproval = requiresApproval,
                 CreatedBy = reconciliation.CreatedBy,
                 CreatedAt = reconciliation.CreatedAt,
                 ApprovedBy = reconciliation.ApprovedBy,
                 ApprovedAt = reconciliation.ApprovedAt,
-                Lines = ToLineItems(reconciliation, cassettes)
+                Lines = lines
             };
         }
 
@@ -81,22 +93,30 @@ namespace Fimple.Atm.Application.Services
 
         private static List<ReconciliationModel.LineItem> ToLineItems(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
-            var positions = cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
+            var positions = CassettePositions.Build(cassettes);
             return reconciliation.Lines
-                .Select(line => new ReconciliationModel.LineItem
-                {
-                    CassetteId = line.CassetteId,
-                    CassettePosition = positions.GetValueOrDefault(line.CassetteId),
-                    Currency = line.Currency,
-                    Denomination = (int)line.Denomination,
-                    SystemCount = line.SystemCount,
-                    CountedCount = line.CountedCount,
-                    Difference = line.Difference
-                })
+                .Select(line => ToLineItem(line, positions))
                 .OrderBy(line => line.CassettePosition)
                 .ThenBy(line => line.Currency)
                 .ThenBy(line => line.Denomination)
                 .ToList();
+        }
+
+        private static ReconciliationModel.LineItem ToLineItem(ReconciliationLine line, Dictionary<Guid, int> positions)
+        {
+            var cassettePosition = CassettePositions.Get(positions, line.CassetteId);
+            var denomination = (int)line.Denomination;
+
+            return new ReconciliationModel.LineItem
+            {
+                CassetteId = line.CassetteId,
+                CassettePosition = cassettePosition,
+                Currency = line.Currency,
+                Denomination = denomination,
+                SystemCount = line.SystemCount,
+                CountedCount = line.CountedCount,
+                Difference = line.Difference
+            };
         }
     }
 }

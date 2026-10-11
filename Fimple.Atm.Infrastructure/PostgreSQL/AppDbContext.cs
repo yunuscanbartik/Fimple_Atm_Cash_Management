@@ -6,7 +6,6 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
 {
     public class AppDbContext : DbContext
     {
-        public const string ATMS_TABLE_NAME = "t_Atms";
         private const string TIMESTAMP_WITH_TIME_ZONE = "timestamp with time zone";
         private const int ENUM_MAX_LENGTH = 32;
         private const int NAME_MAX_LENGTH = 255;
@@ -61,7 +60,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<AtmMachine>();
 
-            entity.ToTable(ATMS_TABLE_NAME);
+            entity.ToTable(TableNames.ATMS);
             entity.HasKey(atm => atm.Id);
             entity.Property(atm => atm.Id)
                 .ValueGeneratedNever()
@@ -90,7 +89,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<Cassette>();
 
-            entity.ToTable("t_Cassettes");
+            entity.ToTable(TableNames.CASSETTES);
             entity.HasKey(cassette => cassette.Id);
             entity.Property(cassette => cassette.Id)
                 .ValueGeneratedNever()
@@ -136,10 +135,10 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<CassetteContent>();
 
-            entity.ToTable("t_CassetteContents", table =>
+            entity.ToTable(TableNames.CASSETTE_CONTENTS, table =>
             {
-                table.HasCheckConstraint("CK_t_CassetteContents_NoteCount", "\"NoteCount\" >= 0");
-                table.HasCheckConstraint("CK_t_CassetteContents_ReservedCount", "\"ReservedCount\" >= 0 AND \"ReservedCount\" <= \"NoteCount\"");
+                table.HasCheckConstraint("CK_" + TableNames.CASSETTE_CONTENTS + "_NoteCount", "\"NoteCount\" >= 0");
+                table.HasCheckConstraint("CK_" + TableNames.CASSETTE_CONTENTS + "_ReservedCount", "\"ReservedCount\" >= 0 AND \"ReservedCount\" <= \"NoteCount\"");
             });
             entity.HasKey(content => content.Id);
             entity.Property(content => content.Id)
@@ -176,7 +175,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<CassetteMovement>();
 
-            entity.ToTable("t_CassetteMovements");
+            entity.ToTable(TableNames.CASSETTE_MOVEMENTS);
             entity.HasKey(movement => movement.Id);
             entity.Property(movement => movement.Id)
                 .ValueGeneratedNever()
@@ -227,7 +226,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<WithdrawalQuote>();
 
-            entity.ToTable("t_WithdrawalQuotes");
+            entity.ToTable(TableNames.WITHDRAWAL_QUOTES);
             entity.HasKey(quote => quote.Id);
             entity.Property(quote => quote.Id)
                 .ValueGeneratedNever()
@@ -295,7 +294,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<WithdrawalQuoteOption>();
 
-            entity.ToTable("t_WithdrawalQuoteOptions");
+            entity.ToTable(TableNames.WITHDRAWAL_QUOTE_OPTIONS);
             entity.HasKey(option => option.Id);
             entity.Property(option => option.Id)
                 .ValueGeneratedNever()
@@ -325,7 +324,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<WithdrawalQuoteOptionItem>();
 
-            entity.ToTable("t_WithdrawalQuoteOptionItems");
+            entity.ToTable(TableNames.WITHDRAWAL_QUOTE_OPTION_ITEMS);
             entity.HasKey(item => item.Id);
             entity.Property(item => item.Id)
                 .ValueGeneratedNever()
@@ -361,7 +360,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<DepositTransaction>();
 
-            entity.ToTable("t_DepositTransactions");
+            entity.ToTable(TableNames.DEPOSIT_TRANSACTIONS);
             entity.HasKey(deposit => deposit.Id);
             entity.Property(deposit => deposit.Id)
                 .ValueGeneratedNever()
@@ -389,7 +388,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<DepositNote>();
 
-            entity.ToTable("t_DepositNotes");
+            entity.ToTable(TableNames.DEPOSIT_NOTES);
             entity.HasKey(note => note.Id);
             entity.Property(note => note.Id)
                 .ValueGeneratedNever()
@@ -428,7 +427,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<Reconciliation>();
 
-            entity.ToTable("t_Reconciliations");
+            entity.ToTable(TableNames.RECONCILIATIONS);
             entity.HasKey(reconciliation => reconciliation.Id);
             entity.Property(reconciliation => reconciliation.Id)
                 .ValueGeneratedNever()
@@ -472,7 +471,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<ReconciliationLine>();
 
-            entity.ToTable("t_ReconciliationLines");
+            entity.ToTable(TableNames.RECONCILIATION_LINES);
             entity.HasKey(line => line.Id);
             entity.Property(line => line.Id)
                 .ValueGeneratedNever()
@@ -518,7 +517,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<ExchangeRate>();
 
-            entity.ToTable("t_ExchangeRates");
+            entity.ToTable(TableNames.EXCHANGE_RATES);
             entity.HasKey(exchangeRate => exchangeRate.Id);
             entity.Property(exchangeRate => exchangeRate.Id)
                 .ValueGeneratedNever()
@@ -567,7 +566,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<OutboxEvent>();
 
-            entity.ToTable("t_OutboxEvents");
+            entity.ToTable(TableNames.OUTBOX_EVENTS);
             entity.HasKey(outboxEvent => outboxEvent.Id);
             entity.Property(outboxEvent => outboxEvent.Id)
                 .ValueGeneratedNever()

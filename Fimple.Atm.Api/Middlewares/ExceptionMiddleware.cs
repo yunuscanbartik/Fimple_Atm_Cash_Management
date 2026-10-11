@@ -85,11 +85,13 @@ namespace Fimple.Atm.Api.Middlewares
         {
             if (httpContext.Response.HasStarted) return;
 
+            var title = ReasonPhrases.GetReasonPhrase(statusCode);
+            var problemType = PROBLEM_TYPE_PREFIX + errorCode;
             var problemDetails = new ProblemDetails
             {
                 Status = statusCode,
-                Title = ReasonPhrases.GetReasonPhrase(statusCode),
-                Type = PROBLEM_TYPE_PREFIX + errorCode,
+                Title = title,
+                Type = problemType,
                 Detail = detail,
                 Instance = httpContext.Request.Path
             };

@@ -8,55 +8,67 @@ namespace Fimple.Atm.Application.Services
     {
         public static WithdrawalModel.CreateQuote.Return ToCreateQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
         {
+            var status = GetEffectiveStatus(quote, now);
+            var isExactMatch = HasExactOption(quote);
+            var options = ToOptionItems(quote, cassettes);
+
             return new WithdrawalModel.CreateQuote.Return
             {
                 QuoteId = quote.Id,
                 AtmId = quote.AtmId,
                 Currency = quote.Currency,
                 RequestedAmount = quote.RequestedAmount,
-                Status = GetEffectiveStatus(quote, now),
+                Status = status,
                 MaskedCardNumber = quote.MaskedCardNumber,
                 ExpiresAt = quote.ExpiresAt,
-                IsExactMatch = HasExactOption(quote),
-                Options = ToOptionItems(quote, cassettes)
+                IsExactMatch = isExactMatch,
+                Options = options
             };
         }
 
         public static WithdrawalModel.GetQuote.Return ToGetQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
         {
+            var status = GetEffectiveStatus(quote, now);
+            var isExactMatch = HasExactOption(quote);
+            var options = ToOptionItems(quote, cassettes);
+
             return new WithdrawalModel.GetQuote.Return
             {
                 QuoteId = quote.Id,
                 AtmId = quote.AtmId,
                 Currency = quote.Currency,
                 RequestedAmount = quote.RequestedAmount,
-                Status = GetEffectiveStatus(quote, now),
+                Status = status,
                 MaskedCardNumber = quote.MaskedCardNumber,
                 ExpiresAt = quote.ExpiresAt,
-                IsExactMatch = HasExactOption(quote),
-                Options = ToOptionItems(quote, cassettes)
+                IsExactMatch = isExactMatch,
+                Options = options
             };
         }
 
         public static WithdrawalModel.CancelQuote.Return ToCancelQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
         {
+            var status = GetEffectiveStatus(quote, now);
+            var isExactMatch = HasExactOption(quote);
+            var options = ToOptionItems(quote, cassettes);
+
             return new WithdrawalModel.CancelQuote.Return
             {
                 QuoteId = quote.Id,
                 AtmId = quote.AtmId,
                 Currency = quote.Currency,
                 RequestedAmount = quote.RequestedAmount,
-                Status = GetEffectiveStatus(quote, now),
+                Status = status,
                 MaskedCardNumber = quote.MaskedCardNumber,
                 ExpiresAt = quote.ExpiresAt,
-                IsExactMatch = HasExactOption(quote),
-                Options = ToOptionItems(quote, cassettes)
+                IsExactMatch = isExactMatch,
+                Options = options
             };
         }
 
         public static WithdrawalModel.ConfirmQuote.Return ToConfirmQuoteReturn(WithdrawalQuote quote, WithdrawalQuoteOption confirmedOption, IEnumerable<Cassette> cassettes)
         {
-            var optionItem = ToOptionItem(confirmedOption, ToPositions(cassettes));
+            var optionItem = ToOptionItem(confirmedOption, CassettePositions.Build(cassettes));
 
             return new WithdrawalModel.ConfirmQuote.Return
             {
@@ -82,14 +94,9 @@ namespace Fimple.Atm.Application.Services
             return quote.Options.Any(option => option.OptionType == QuoteOptionType.Exact);
         }
 
-        private static Dictionary<Guid, int> ToPositions(IEnumerable<Cassette> cassettes)
-        {
-            return cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
-        }
-
         private static List<WithdrawalModel.OptionItem> ToOptionItems(WithdrawalQuote quote, IEnumerable<Cassette> cassettes)
         {
-            var positions = ToPositions(cassettes);
+            var positions = CassettePositions.Build(cassettes);
             return quote.Options
                 .OrderBy(option => option.OptionType)
                 .Select(option => ToOptionItem(option, positions))
@@ -99,22 +106,31 @@ namespace Fimple.Atm.Application.Services
         private static WithdrawalModel.OptionItem ToOptionItem(WithdrawalQuoteOption option, Dictionary<Guid, int> positions)
         {
             var notes = option.Items
-                .OrderBy(item => positions.GetValueOrDefault(item.CassetteId))
-                .Select(item => new WithdrawalModel.NoteItem
-                {
-                    CassetteId = item.CassetteId,
-                    CassettePosition = positions.GetValueOrDefault(item.CassetteId),
-                    Denomination = (int)item.Denomination,
-                    NoteCount = item.NoteCount
-                })
+                .OrderBy(item => CassettePositions.Get(positions, item.CassetteId))
+                .Select(item => ToNoteItem(item, positions))
                 .ToList();
+            var noteCount = notes.Sum(note => note.NoteCount);
 
             return new WithdrawalModel.OptionItem
             {
                 OptionType = option.OptionType,
                 Amount = option.Amount,
-                NoteCount = notes.Sum(note => note.NoteCount),
+                NoteCount = noteCount,
                 Notes = notes
+            };
+        }
+
+        private static WithdrawalModel.NoteItem ToNoteItem(WithdrawalQuoteOptionItem item, Dictionary<Guid, int> positions)
+        {
+            var cassettePosition = CassettePositions.Get(positions, item.CassetteId);
+            var denomination = (int)item.Denomination;
+
+            return new WithdrawalModel.NoteItem
+            {
+                CassetteId = item.CassetteId,
+                CassettePosition = cassettePosition,
+                Denomination = denomination,
+                NoteCount = item.NoteCount
             };
         }
     }

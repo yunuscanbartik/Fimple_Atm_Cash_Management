@@ -4,10 +4,7 @@ using Fimple.Atm.Worker.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Configuration.AddLocalSettings(builder.Environment.ContentRootPath);
-}
+builder.AddLocalSettingsInDevelopment();
 
 builder.Services.AddPostgresDatabase(builder.Configuration.GetConnectionString("PostgreSql"));
 builder.Services.AddApplicationServices(builder.Configuration);

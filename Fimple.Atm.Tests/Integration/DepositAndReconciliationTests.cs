@@ -44,7 +44,7 @@ namespace Fimple.Atm.Tests.Integration
         {
             var atmId = await CreateAtmInMaintenance();
 
-            var reconciliation = await Reconcile(atmId, "alice", pos2: 9, pos3: 10, pos4: 10, pos5: 10);
+            var reconciliation = await Reconcile(atmId, "alice", hundredCassetteCount: 9, fiftyCassetteCount: 10, twentyCassetteCount: 10, dollarCassetteCount: 10);
 
             Assert.Equal(ReconciliationStatus.Completed, reconciliation.Status);
             Assert.Equal(100m, reconciliation.TotalDifferenceInBaseCurrency);
@@ -58,7 +58,7 @@ namespace Fimple.Atm.Tests.Integration
         {
             var atmId = await CreateAtmInMaintenance();
 
-            var reconciliation = await Reconcile(atmId, "alice", pos2: 10, pos3: 10, pos4: 10, pos5: 8);
+            var reconciliation = await Reconcile(atmId, "alice", hundredCassetteCount: 10, fiftyCassetteCount: 10, twentyCassetteCount: 10, dollarCassetteCount: 8);
 
             Assert.Equal(ReconciliationStatus.AwaitingApproval, reconciliation.Status);
             Assert.Equal(8400m, reconciliation.TotalDifferenceInBaseCurrency);
@@ -133,16 +133,16 @@ namespace Fimple.Atm.Tests.Integration
             return atmId;
         }
 
-        private async Task<ReconciliationModel.Add.Return> Reconcile(Guid atmId, string userName, int pos2, int pos3, int pos4, int pos5)
+        private async Task<ReconciliationModel.Add.Return> Reconcile(Guid atmId, string userName, int hundredCassetteCount, int fiftyCassetteCount, int twentyCassetteCount, int dollarCassetteCount)
         {
             var response = await Api.Post($"/api/atms/{atmId}/reconciliations", new
             {
                 counts = new[]
                 {
-                    new { cassettePosition = 2, countedNoteCount = pos2 },
-                    new { cassettePosition = 3, countedNoteCount = pos3 },
-                    new { cassettePosition = 4, countedNoteCount = pos4 },
-                    new { cassettePosition = 5, countedNoteCount = pos5 }
+                    new { cassettePosition = 2, countedNoteCount = hundredCassetteCount },
+                    new { cassettePosition = 3, countedNoteCount = fiftyCassetteCount },
+                    new { cassettePosition = 4, countedNoteCount = twentyCassetteCount },
+                    new { cassettePosition = 5, countedNoteCount = dollarCassetteCount }
                 }
             }, (AtmTestHelper.USER_HEADER, userName));
             return await ApiClient.Read<ReconciliationModel.Add.Return>(response);
