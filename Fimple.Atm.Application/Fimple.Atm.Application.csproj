@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fimple.Atm.Domain\Fimple.Atm.Domain.csproj" />
+    <ProjectReference Include="..\Fimple.Atm.Infrastructure\Fimple.Atm.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
