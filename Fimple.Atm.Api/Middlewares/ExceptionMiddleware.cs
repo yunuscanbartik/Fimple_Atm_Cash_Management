@@ -74,6 +74,7 @@ namespace Fimple.Atm.Api.Middlewares
             return atmException switch
             {
                 NotFoundException => StatusCodes.Status404NotFound,
+                ForbiddenException => StatusCodes.Status403Forbidden,
                 ConflictException => StatusCodes.Status409Conflict,
                 BusinessRuleException => StatusCodes.Status422UnprocessableEntity,
                 _ => StatusCodes.Status400BadRequest

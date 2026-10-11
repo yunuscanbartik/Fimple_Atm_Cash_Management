@@ -102,7 +102,7 @@ namespace Fimple.Atm.Application.Services
 
         private void ApplyCassetteConfiguration(AtmMachine atm, AtmModel.CassetteConfigItem configuration, DateTime now)
         {
-            var denomination = ToDenomination(configuration.Denomination);
+            var denomination = CassetteNoteTypeResolver.ToDenomination(configuration.Denomination);
             var cassette = atm.Cassettes.FirstOrDefault(existingCassette => existingCassette.Position == configuration.Position);
 
             if (cassette == null)
@@ -154,7 +154,7 @@ namespace Fimple.Atm.Application.Services
         private void LoadCashItem(AtmMachine atm, AtmModel.CashItem item, string? userName)
         {
             var cassette = FindCassette(atm, item.CassettePosition);
-            var noteType = ResolveNoteType(cassette, item);
+            var noteType = CassetteNoteTypeResolver.Resolve(cassette, item.Currency, CassetteNoteTypeResolver.ToDenomination(item.Denomination));
 
             var currentNoteCount = cassette.Contents.Sum(content => content.NoteCount);
             if (currentNoteCount + item.NoteCount > cassette.Capacity)
@@ -178,7 +178,7 @@ namespace Fimple.Atm.Application.Services
         private void UnloadCashItem(AtmMachine atm, AtmModel.CashItem item, string? userName)
         {
             var cassette = FindCassette(atm, item.CassettePosition);
-            var noteType = ResolveNoteType(cassette, item);
+            var noteType = CassetteNoteTypeResolver.Resolve(cassette, item.Currency, CassetteNoteTypeResolver.ToDenomination(item.Denomination));
 
             var content = cassette.Contents.FirstOrDefault(existingContent =>
                 existingContent.Currency == noteType.Currency && existingContent.Denomination == noteType.Denomination);
@@ -209,37 +209,6 @@ namespace Fimple.Atm.Application.Services
             }
 
             return cassette;
-        }
-
-        private static (Currency Currency, Denomination Denomination) ResolveNoteType(Cassette cassette, AtmModel.CashItem item)
-        {
-            var requestedDenomination = ToDenomination(item.Denomination);
-
-            if (cassette.Kind == CassetteKind.Deposit)
-            {
-                if (item.Currency == null || requestedDenomination == null)
-                {
-                    throw new BusinessRuleException(ErrorCodes.NoteTypeRequired,
-                        $"Cassette {cassette.Position} is the deposit cassette; currency and denomination are required.");
-                }
-
-                return (item.Currency.Value, requestedDenomination.Value);
-            }
-
-            var currencyMismatch = item.Currency != null && item.Currency != cassette.Currency;
-            var denominationMismatch = requestedDenomination != null && requestedDenomination != cassette.Denomination;
-            if (currencyMismatch || denominationMismatch)
-            {
-                throw new BusinessRuleException(ErrorCodes.CassetteNoteMismatch,
-                    $"Cassette {cassette.Position} only holds {cassette.Currency} {(int)cassette.Denomination.Value} notes.");
-            }
-
-            return (cassette.Currency.Value, cassette.Denomination.Value);
-        }
-
-        private static Denomination? ToDenomination(int? denominationValue)
-        {
-            return denominationValue.HasValue ? (Denomination)denominationValue.Value : null;
         }
     }
 }

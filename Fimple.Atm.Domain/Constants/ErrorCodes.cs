@@ -17,6 +17,12 @@ namespace Fimple.Atm.Domain.Constants
         public const string InsufficientNotes = "INSUFFICIENT_NOTES";
         public const string NoteTypeRequired = "NOTE_TYPE_REQUIRED";
         public const string EmptyDeposit = "EMPTY_DEPOSIT";
+        public const string UserHeaderRequired = "USER_HEADER_REQUIRED";
+        public const string ReconciliationNotFound = "RECONCILIATION_NOT_FOUND";
+        public const string ReconciliationNotPending = "RECONCILIATION_NOT_PENDING";
+        public const string FourEyesViolation = "FOUR_EYES_VIOLATION";
+        public const string InvalidReconciliationCounts = "INVALID_RECONCILIATION_COUNTS";
+        public const string ExchangeRateMissing = "EXCHANGE_RATE_MISSING";
         public const string ReconciliationAwaitingApproval = "RECONCILIATION_AWAITING_APPROVAL";
         public const string QuoteNotFound = "QUOTE_NOT_FOUND";
         public const string QuoteExpired = "QUOTE_EXPIRED";
