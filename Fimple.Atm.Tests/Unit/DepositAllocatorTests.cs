@@ -1,7 +1,7 @@
 using Fimple.Atm.Application.Services;
 using Fimple.Atm.Domain.Enums;
 
-namespace Fimple.Atm.Tests
+namespace Fimple.Atm.Tests.Unit
 {
     public class DepositAllocatorTests
     {
