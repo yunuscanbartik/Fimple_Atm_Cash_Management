@@ -6,7 +6,7 @@ namespace Fimple.Atm.Domain.Entities
     {
         public Guid Id { get; set; }
         public Guid AtmId { get; set; }
-        public Atm Atm { get; set; } = null!;
+        public AtmMachine Atm { get; set; } = null!;
         public ReconciliationStatus Status { get; set; }
         public decimal TotalDifferenceInBaseCurrency { get; set; }
         public required string CreatedBy { get; set; }

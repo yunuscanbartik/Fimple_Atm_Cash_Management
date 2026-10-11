@@ -6,7 +6,7 @@ namespace Fimple.Atm.Domain.Entities
     {
         public Guid Id { get; set; }
         public Guid AtmId { get; set; }
-        public Atm Atm { get; set; } = null!;
+        public AtmMachine Atm { get; set; } = null!;
         public required string CardHash { get; set; }
         public required string MaskedCardNumber { get; set; }
         public Currency Currency { get; set; }

@@ -2,7 +2,7 @@ using Fimple.Atm.Domain.Enums;
 
 namespace Fimple.Atm.Domain.Entities
 {
-    public class Atm
+    public class AtmMachine
     {
         public Guid Id { get; set; }
         public required string Name { get; set; }
