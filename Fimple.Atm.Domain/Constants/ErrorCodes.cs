@@ -16,6 +16,7 @@ namespace Fimple.Atm.Domain.Constants
         public const string CassetteNoteMismatch = "CASSETTE_NOTE_MISMATCH";
         public const string InsufficientNotes = "INSUFFICIENT_NOTES";
         public const string NoteTypeRequired = "NOTE_TYPE_REQUIRED";
+        public const string EmptyDeposit = "EMPTY_DEPOSIT";
         public const string ReconciliationAwaitingApproval = "RECONCILIATION_AWAITING_APPROVAL";
         public const string QuoteNotFound = "QUOTE_NOT_FOUND";
         public const string QuoteExpired = "QUOTE_EXPIRED";

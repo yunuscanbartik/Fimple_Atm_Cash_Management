@@ -26,6 +26,7 @@ namespace Fimple.Atm.Application.Extensions
             services.AddScoped<IAtmService, AtmService>();
             services.AddScoped<ICassetteService, CassetteService>();
             services.AddScoped<IWithdrawalService, WithdrawalService>();
+            services.AddScoped<IDepositService, DepositService>();
             return services;
         }
 
