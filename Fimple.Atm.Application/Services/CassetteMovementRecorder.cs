@@ -1,6 +1,9 @@
+using System.Text.Json;
+using Fimple.Atm.Domain.Constants;
 using Fimple.Atm.Domain.Entities;
 using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Interfaces;
+using Fimple.Atm.Domain.Models;
 using Fimple.Atm.Infrastructure.PostgreSQL;
 
 namespace Fimple.Atm.Application.Services
@@ -46,9 +49,11 @@ namespace Fimple.Atm.Application.Services
                     $"(notes {noteCount}, reserved {reservedCount}).");
             }
 
+            var availableCountBefore = content.AvailableCount;
             content.NoteCount = noteCount;
             content.ReservedCount = reservedCount;
 
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
             var movement = new CassetteMovement
             {
                 Id = Guid.NewGuid(),
@@ -60,9 +65,49 @@ namespace Fimple.Atm.Application.Services
                 ReservedCountDelta = movementRequest.ReservedCountDelta,
                 ReferenceId = movementRequest.ReferenceId,
                 PerformedBy = movementRequest.PerformedBy,
-                CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
+                CreatedAt = now
             };
             _appDbContext.CassetteMovements.Add(movement);
+
+            AddLowCashAlertIfThresholdCrossed(movementRequest, availableCountBefore, now);
+        }
+
+        private void AddLowCashAlertIfThresholdCrossed(CassetteMovementRequest movementRequest, int availableCountBefore, DateTime now)
+        {
+            var cassette = movementRequest.Cassette;
+            var content = movementRequest.Content;
+            if (cassette.Kind != CassetteKind.Recycling) return;
+
+            var wasLow = IsLowCash(availableCountBefore, cassette.Capacity);
+            var isLow = IsLowCash(content.AvailableCount, cassette.Capacity);
+            if (wasLow || !isLow) return;
+
+            var payload = new LowCashAlertPayload
+            {
+                AtmId = cassette.AtmId,
+                CassetteId = cassette.Id,
+                CassettePosition = cassette.Position,
+                Currency = content.Currency,
+                Denomination = (int)content.Denomination,
+                AvailableCount = content.AvailableCount,
+                Capacity = cassette.Capacity,
+                TriggeredBy = movementRequest.MovementType,
+                ReferenceId = movementRequest.ReferenceId
+            };
+
+            _appDbContext.OutboxEvents.Add(new OutboxEvent
+            {
+                Id = Guid.NewGuid(),
+                EventType = OutboxEventType.LowCashAlert,
+                Payload = JsonSerializer.Serialize(payload, OutboxJson.Options),
+                Status = OutboxEventStatus.Pending,
+                CreatedAt = now
+            });
+        }
+
+        private static bool IsLowCash(int availableCount, int capacity)
+        {
+            return (decimal)availableCount / capacity < AtmRules.LowCashThresholdRatio;
         }
     }
 }

@@ -7,6 +7,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddPostgresDatabase(builder.Configuration.GetConnectionString("PostgreSql"));
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddHostedService<QuoteExpiryWorker>();
+builder.Services.AddHostedService<OutboxWorker>();
 
 var host = builder.Build();
 host.Run();
