@@ -4,18 +4,22 @@ using Fimple.Atm.Domain.Entities;
 using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
 
 namespace Fimple.Atm.Application.Services
 {
     public class CassetteMovementRecorder : ICassetteMovementRecorder
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly ICassetteMovementRepository _movementRepository;
+        private readonly IOutboxRepository _outboxRepository;
         private readonly TimeProvider _timeProvider;
 
-        public CassetteMovementRecorder(AppDbContext appDbContext, TimeProvider timeProvider)
+        public CassetteMovementRecorder(
+            ICassetteMovementRepository movementRepository,
+            IOutboxRepository outboxRepository,
+            TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _movementRepository = movementRepository;
+            _outboxRepository = outboxRepository;
             _timeProvider = timeProvider;
         }
 
@@ -67,7 +71,7 @@ namespace Fimple.Atm.Application.Services
                 PerformedBy = movementRequest.PerformedBy,
                 CreatedAt = now
             };
-            _appDbContext.CassetteMovements.Add(movement);
+            _movementRepository.Add(movement);
 
             AddLowCashAlertIfThresholdCrossed(movementRequest, availableCountBefore, now);
         }
@@ -82,24 +86,26 @@ namespace Fimple.Atm.Application.Services
             var isLow = IsLowCash(content.AvailableCount, cassette.Capacity);
             if (wasLow || !isLow) return;
 
+            var denomination = (int)content.Denomination;
             var payload = new LowCashAlertPayload
             {
                 AtmId = cassette.AtmId,
                 CassetteId = cassette.Id,
                 CassettePosition = cassette.Position,
                 Currency = content.Currency,
-                Denomination = (int)content.Denomination,
+                Denomination = denomination,
                 AvailableCount = content.AvailableCount,
                 Capacity = cassette.Capacity,
                 TriggeredBy = movementRequest.MovementType,
                 ReferenceId = movementRequest.ReferenceId
             };
+            var serializedPayload = JsonSerializer.Serialize(payload, OutboxJson.Options);
 
-            _appDbContext.OutboxEvents.Add(new OutboxEvent
+            _outboxRepository.Add(new OutboxEvent
             {
                 Id = Guid.NewGuid(),
                 EventType = OutboxEventType.LowCashAlert,
-                Payload = JsonSerializer.Serialize(payload, OutboxJson.Options),
+                Payload = serializedPayload,
                 Status = OutboxEventStatus.Pending,
                 CreatedAt = now
             });

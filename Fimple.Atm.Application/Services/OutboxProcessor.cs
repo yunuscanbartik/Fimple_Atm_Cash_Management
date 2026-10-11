@@ -3,8 +3,6 @@ using Fimple.Atm.Domain.Entities;
 using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Fimple.Atm.Application.Services
@@ -13,24 +11,24 @@ namespace Fimple.Atm.Application.Services
     {
         private const int BATCH_SIZE = 50;
 
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IOutboxRepository _outboxRepository;
         private readonly TimeProvider _timeProvider;
         private readonly ILogger<OutboxProcessor> _logger;
 
-        public OutboxProcessor(AppDbContext appDbContext, TimeProvider timeProvider, ILogger<OutboxProcessor> logger)
+        public OutboxProcessor(IUnitOfWork unitOfWork, IOutboxRepository outboxRepository, TimeProvider timeProvider, ILogger<OutboxProcessor> logger)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _outboxRepository = outboxRepository;
             _timeProvider = timeProvider;
             _logger = logger;
         }
 
         public async Task<int> ProcessPendingEvents()
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
+            await using var transaction = await _unitOfWork.BeginTransaction();
 
-            var pendingEvents = await _appDbContext.OutboxEvents
-                .FromSqlInterpolated($"SELECT * FROM \"t_OutboxEvents\" WHERE \"Status\" = {nameof(OutboxEventStatus.Pending)} ORDER BY \"CreatedAt\" LIMIT {BATCH_SIZE} FOR UPDATE SKIP LOCKED")
-                .ToListAsync();
+            var pendingEvents = await _outboxRepository.LockPendingEvents(BATCH_SIZE);
 
             var sentAt = _timeProvider.GetUtcNow().UtcDateTime;
             foreach (var outboxEvent in pendingEvents)
@@ -40,10 +38,10 @@ namespace Fimple.Atm.Application.Services
                 outboxEvent.SentAt = sentAt;
             }
 
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
-            _appDbContext.ChangeTracker.Clear();
+            _unitOfWork.ClearTracking();
             return pendingEvents.Count;
         }
 

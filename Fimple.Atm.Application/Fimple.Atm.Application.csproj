@@ -2,11 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fimple.Atm.Domain\Fimple.Atm.Domain.csproj" />
-    <ProjectReference Include="..\Fimple.Atm.Infrastructure\Fimple.Atm.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
   </ItemGroup>
 
   <PropertyGroup>

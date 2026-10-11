@@ -4,27 +4,31 @@ using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Application.Services
 {
     public class WithdrawalService : IWithdrawalService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
+        private readonly IWithdrawalQuoteRepository _quoteRepository;
         private readonly ICassetteMovementRecorder _cassetteMovementRecorder;
         private readonly IQuoteReservationReleaser _quoteReservationReleaser;
         private readonly ICardHasher _cardHasher;
         private readonly TimeProvider _timeProvider;
 
         public WithdrawalService(
-            AppDbContext appDbContext,
+            IUnitOfWork unitOfWork,
+            IAtmRepository atmRepository,
+            IWithdrawalQuoteRepository quoteRepository,
             ICassetteMovementRecorder cassetteMovementRecorder,
             IQuoteReservationReleaser quoteReservationReleaser,
             ICardHasher cardHasher,
             TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
+            _quoteRepository = quoteRepository;
             _cassetteMovementRecorder = cassetteMovementRecorder;
             _quoteReservationReleaser = quoteReservationReleaser;
             _cardHasher = cardHasher;
@@ -36,12 +40,12 @@ namespace Fimple.Atm.Application.Services
             var cardHash = _cardHasher.Hash(request.CardNumber);
             var maskedCardNumber = _cardHasher.Mask(request.CardNumber);
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             EnsureInService(atm, "quote a withdrawal");
 
             await _quoteReservationReleaser.ReleaseExpiredQuotes(atm);
-            await _appDbContext.LockCardForUpdate(cardHash);
+            await _quoteRepository.LockCard(cardHash);
 
             var now = _timeProvider.GetUtcNow().UtcDateTime;
             var remainingLimit = await GetRemainingDailyLimit(cardHash, request.Currency, now);
@@ -61,40 +65,34 @@ namespace Fimple.Atm.Application.Services
             }
 
             var quote = BuildQuote(atm, request, cardHash, maskedCardNumber, offeredBreakdowns, now);
-            _appDbContext.WithdrawalQuotes.Add(quote);
+            _quoteRepository.Add(quote);
             ReserveNotes(atm, quote);
 
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return WithdrawalModelMapper.ToCreateQuoteReturn(quote, atm.Cassettes, now);
         }
 
         public async Task<WithdrawalModel.GetQuote.Return> GetQuote(WithdrawalModel.GetQuote.Request request)
         {
-            var quote = await _appDbContext.WithdrawalQuotes
-                .AsNoTracking()
-                .Include(withdrawalQuote => withdrawalQuote.Options)
-                .ThenInclude(option => option.Items)
-                .FirstOrDefaultAsync(withdrawalQuote => withdrawalQuote.Id == request.QuoteId && withdrawalQuote.AtmId == request.AtmId);
+            var quote = await _quoteRepository.FindReadOnly(request.AtmId, request.QuoteId);
             if (quote == null)
             {
                 throw QuoteNotFound(request.QuoteId);
             }
 
-            var cassettes = await _appDbContext.Cassettes
-                .AsNoTracking()
-                .Where(cassette => cassette.AtmId == request.AtmId)
-                .ToListAsync();
-            return WithdrawalModelMapper.ToGetQuoteReturn(quote, cassettes, _timeProvider.GetUtcNow().UtcDateTime);
+            var cassettes = await _atmRepository.GetCassettesReadOnly(request.AtmId);
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
+            return WithdrawalModelMapper.ToGetQuoteReturn(quote, cassettes, now);
         }
 
         public async Task<WithdrawalModel.ConfirmQuote.Return> ConfirmQuote(WithdrawalModel.ConfirmQuote.Request request)
         {
             var idempotencyKey = ValidateIdempotencyKey(request.IdempotencyKey);
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             var quote = await LoadQuote(request.AtmId, request.QuoteId);
 
             var isReplay = quote.Status == QuoteStatus.Confirmed && quote.ConfirmIdempotencyKey == idempotencyKey;
@@ -110,8 +108,8 @@ namespace Fimple.Atm.Application.Services
             if (quote.ExpiresAt <= now)
             {
                 _quoteReservationReleaser.ReleaseReservation(atm, quote, QuoteStatus.Expired);
-                await _appDbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await _unitOfWork.SaveChanges();
+                await transaction.Commit();
                 throw new ConflictException(ErrorCodes.QUOTE_EXPIRED, "The quote has expired and its reservation was released.");
             }
 
@@ -126,16 +124,16 @@ namespace Fimple.Atm.Application.Services
             quote.LimitAmount = chosenOption.Amount;
             quote.UpdatedAt = now;
 
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return WithdrawalModelMapper.ToConfirmQuoteReturn(quote, chosenOption, atm.Cassettes);
         }
 
         public async Task<WithdrawalModel.CancelQuote.Return> CancelQuote(WithdrawalModel.CancelQuote.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             var quote = await LoadQuote(request.AtmId, request.QuoteId);
 
             if (quote.Status == QuoteStatus.Confirmed)
@@ -148,19 +146,16 @@ namespace Fimple.Atm.Application.Services
             {
                 var newStatus = quote.ExpiresAt <= now ? QuoteStatus.Expired : QuoteStatus.Cancelled;
                 _quoteReservationReleaser.ReleaseReservation(atm, quote, newStatus);
-                await _appDbContext.SaveChangesAsync();
+                await _unitOfWork.SaveChanges();
             }
 
-            await transaction.CommitAsync();
+            await transaction.Commit();
             return WithdrawalModelMapper.ToCancelQuoteReturn(quote, atm.Cassettes, now);
         }
 
         private async Task<WithdrawalQuote> LoadQuote(Guid atmId, Guid quoteId)
         {
-            var quote = await _appDbContext.WithdrawalQuotes
-                .Include(withdrawalQuote => withdrawalQuote.Options)
-                .ThenInclude(option => option.Items)
-                .FirstOrDefaultAsync(withdrawalQuote => withdrawalQuote.Id == quoteId && withdrawalQuote.AtmId == atmId);
+            var quote = await _quoteRepository.Find(atmId, quoteId);
             return quote ?? throw QuoteNotFound(quoteId);
         }
 
@@ -189,8 +184,7 @@ namespace Fimple.Atm.Application.Services
 
         private async Task EnsureKeyNotUsedByAnotherQuote(string idempotencyKey, Guid quoteId)
         {
-            var keyUsedElsewhere = await _appDbContext.WithdrawalQuotes.AnyAsync(withdrawalQuote =>
-                withdrawalQuote.ConfirmIdempotencyKey == idempotencyKey && withdrawalQuote.Id != quoteId);
+            var keyUsedElsewhere = await _quoteRepository.IsIdempotencyKeyUsedByAnotherQuote(idempotencyKey, quoteId);
             if (keyUsedElsewhere)
             {
                 throw new ConflictException(ErrorCodes.IDEMPOTENCY_KEY_REUSED,
@@ -251,12 +245,7 @@ namespace Fimple.Atm.Application.Services
         private async Task<decimal> GetRemainingDailyLimit(string cardHash, Currency currency, DateTime now)
         {
             var dayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
-            var usedAmount = await _appDbContext.WithdrawalQuotes
-                .Where(quote => quote.CardHash == cardHash
-                    && quote.Currency == currency
-                    && quote.CreatedAt >= dayStart
-                    && (quote.Status == QuoteStatus.Confirmed || (quote.Status == QuoteStatus.Pending && quote.ExpiresAt > now)))
-                .SumAsync(quote => (decimal?)quote.LimitAmount) ?? 0m;
+            var usedAmount = await _quoteRepository.GetUsedLimitAmount(cardHash, currency, dayStart, now);
 
             return WithdrawalRules.DailyLimits[currency] - usedAmount;
         }
@@ -287,6 +276,8 @@ namespace Fimple.Atm.Application.Services
             List<(QuoteOptionType OptionType, NoteBreakdown Breakdown)> offeredBreakdowns,
             DateTime now)
         {
+            var limitAmount = offeredBreakdowns.Max(offered => offered.Breakdown.Amount);
+            var expiresAt = now + WithdrawalRules.QuoteValidity;
             var quote = new WithdrawalQuote
             {
                 Id = Guid.NewGuid(),
@@ -295,10 +286,10 @@ namespace Fimple.Atm.Application.Services
                 MaskedCardNumber = maskedCardNumber,
                 Currency = request.Currency,
                 RequestedAmount = request.Amount,
-                LimitAmount = offeredBreakdowns.Max(offered => offered.Breakdown.Amount),
+                LimitAmount = limitAmount,
                 Status = QuoteStatus.Pending,
                 CreatedAt = now,
-                ExpiresAt = now + WithdrawalRules.QuoteValidity
+                ExpiresAt = expiresAt
             };
 
             foreach (var (optionType, breakdown) in offeredBreakdowns)

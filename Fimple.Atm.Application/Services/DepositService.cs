@@ -4,19 +4,27 @@ using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
 
 namespace Fimple.Atm.Application.Services
 {
     public class DepositService : IDepositService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
+        private readonly IDepositRepository _depositRepository;
         private readonly ICassetteMovementRecorder _cassetteMovementRecorder;
         private readonly TimeProvider _timeProvider;
 
-        public DepositService(AppDbContext appDbContext, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
+        public DepositService(
+            IUnitOfWork unitOfWork,
+            IAtmRepository atmRepository,
+            IDepositRepository depositRepository,
+            ICassetteMovementRecorder cassetteMovementRecorder,
+            TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
+            _depositRepository = depositRepository;
             _cassetteMovementRecorder = cassetteMovementRecorder;
             _timeProvider = timeProvider;
         }
@@ -29,8 +37,8 @@ namespace Fimple.Atm.Application.Services
                 throw new BusinessRuleException(ErrorCodes.EMPTY_DEPOSIT, "A deposit must contain at least one note.");
             }
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             if (atm.Status != AtmStatus.InService)
             {
                 throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
@@ -39,11 +47,11 @@ namespace Fimple.Atm.Application.Services
 
             var allocation = DepositAllocator.Allocate(BuildCassetteSpaces(atm), depositLines);
             var deposit = BuildDeposit(atm, request.UnrecognisedNoteCount, allocation);
-            _appDbContext.DepositTransactions.Add(deposit);
+            _depositRepository.Add(deposit);
             RecordPlacements(atm, deposit.Id, allocation);
 
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return BuildResponse(atm, deposit, allocation);
         }
@@ -72,12 +80,13 @@ namespace Fimple.Atm.Application.Services
 
         private DepositTransaction BuildDeposit(AtmMachine atm, int unrecognisedNoteCount, DepositAllocation allocation)
         {
+            var createdAt = _timeProvider.GetUtcNow().UtcDateTime;
             var deposit = new DepositTransaction
             {
                 Id = Guid.NewGuid(),
                 AtmId = atm.Id,
                 UnrecognisedNoteCount = unrecognisedNoteCount,
-                CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
+                CreatedAt = createdAt
             };
 
             foreach (var placement in allocation.Placements)
@@ -136,38 +145,24 @@ namespace Fimple.Atm.Application.Services
             var cassettesById = atm.Cassettes.ToDictionary(cassette => cassette.Id);
 
             var acceptedNotes = allocation.Placements
-                .Select(placement => new DepositModel.AcceptedNoteItem
-                {
-                    Currency = placement.Currency,
-                    Denomination = (int)placement.Denomination,
-                    NoteCount = placement.NoteCount,
-                    CassetteId = placement.CassetteId,
-                    CassettePosition = cassettesById[placement.CassetteId].Position,
-                    CassetteKind = cassettesById[placement.CassetteId].Kind
-                })
+                .Select(placement => ToAcceptedNoteItem(placement, cassettesById))
                 .OrderBy(note => note.CassettePosition)
                 .ThenBy(note => note.Currency)
                 .ThenBy(note => note.Denomination)
                 .ToList();
 
             var returnedNotes = allocation.Returns
-                .Select(returned => new DepositModel.ReturnedNoteItem
-                {
-                    Currency = returned.Currency,
-                    Denomination = (int)returned.Denomination,
-                    NoteCount = returned.NoteCount
-                })
+                .Select(ToReturnedNoteItem)
                 .ToList();
 
             var acceptedTotals = allocation.Placements
                 .GroupBy(placement => placement.Currency)
-                .Select(group => new DepositModel.AcceptedTotalItem
-                {
-                    Currency = group.Key,
-                    Amount = group.Sum(placement => (decimal)placement.NoteCount * (int)placement.Denomination)
-                })
+                .Select(ToAcceptedTotalItem)
                 .OrderBy(total => total.Currency)
                 .ToList();
+
+            var acceptedNoteCount = acceptedNotes.Sum(note => note.NoteCount);
+            var returnedNoteCount = returnedNotes.Sum(note => note.NoteCount);
 
             return new DepositModel.Add.Return
             {
@@ -177,8 +172,47 @@ namespace Fimple.Atm.Application.Services
                 ReturnedNotes = returnedNotes,
                 AcceptedTotals = acceptedTotals,
                 UnrecognisedNoteCount = deposit.UnrecognisedNoteCount,
-                AcceptedNoteCount = acceptedNotes.Sum(note => note.NoteCount),
-                ReturnedNoteCount = returnedNotes.Sum(note => note.NoteCount)
+                AcceptedNoteCount = acceptedNoteCount,
+                ReturnedNoteCount = returnedNoteCount
+            };
+        }
+
+        private static DepositModel.AcceptedNoteItem ToAcceptedNoteItem(DepositPlacement placement, Dictionary<Guid, Cassette> cassettesById)
+        {
+            var cassette = cassettesById[placement.CassetteId];
+            var denomination = (int)placement.Denomination;
+
+            return new DepositModel.AcceptedNoteItem
+            {
+                Currency = placement.Currency,
+                Denomination = denomination,
+                NoteCount = placement.NoteCount,
+                CassetteId = placement.CassetteId,
+                CassettePosition = cassette.Position,
+                CassetteKind = cassette.Kind
+            };
+        }
+
+        private static DepositModel.ReturnedNoteItem ToReturnedNoteItem(DepositReturn returned)
+        {
+            var denomination = (int)returned.Denomination;
+
+            return new DepositModel.ReturnedNoteItem
+            {
+                Currency = returned.Currency,
+                Denomination = denomination,
+                NoteCount = returned.NoteCount
+            };
+        }
+
+        private static DepositModel.AcceptedTotalItem ToAcceptedTotalItem(IGrouping<Currency, DepositPlacement> group)
+        {
+            var amount = group.Sum(placement => (decimal)placement.NoteCount * (int)placement.Denomination);
+
+            return new DepositModel.AcceptedTotalItem
+            {
+                Currency = group.Key,
+                Amount = amount
             };
         }
     }

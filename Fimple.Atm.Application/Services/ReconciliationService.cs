@@ -4,20 +4,30 @@ using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Application.Services
 {
     public class ReconciliationService : IReconciliationService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
+        private readonly IReconciliationRepository _reconciliationRepository;
+        private readonly IExchangeRateRepository _exchangeRateRepository;
         private readonly ICassetteMovementRecorder _cassetteMovementRecorder;
         private readonly TimeProvider _timeProvider;
 
-        public ReconciliationService(AppDbContext appDbContext, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
+        public ReconciliationService(
+            IUnitOfWork unitOfWork,
+            IAtmRepository atmRepository,
+            IReconciliationRepository reconciliationRepository,
+            IExchangeRateRepository exchangeRateRepository,
+            ICassetteMovementRecorder cassetteMovementRecorder,
+            TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
+            _reconciliationRepository = reconciliationRepository;
+            _exchangeRateRepository = exchangeRateRepository;
             _cassetteMovementRecorder = cassetteMovementRecorder;
             _timeProvider = timeProvider;
         }
@@ -25,12 +35,7 @@ namespace Fimple.Atm.Application.Services
         public async Task<ReconciliationModel.Get.Return> GetReconciliation(ReconciliationModel.Get.Request request)
         {
             var cassettes = await LoadCassettes(request.AtmId);
-            var reconciliations = await _appDbContext.Reconciliations
-                .AsNoTracking()
-                .Include(reconciliation => reconciliation.Lines)
-                .Where(reconciliation => reconciliation.AtmId == request.AtmId)
-                .OrderByDescending(reconciliation => reconciliation.CreatedAt)
-                .ToListAsync();
+            var reconciliations = await _reconciliationRepository.GetAllReadOnly(request.AtmId);
 
             var items = reconciliations
                 .Select(reconciliation => ReconciliationModelMapper.ToReconciliationItem(reconciliation, cassettes))
@@ -41,11 +46,7 @@ namespace Fimple.Atm.Application.Services
         public async Task<ReconciliationModel.GetDetail.Return> GetReconciliationDetail(ReconciliationModel.GetDetail.Request request)
         {
             var cassettes = await LoadCassettes(request.AtmId);
-            var reconciliation = await _appDbContext.Reconciliations
-                .AsNoTracking()
-                .Include(existingReconciliation => existingReconciliation.Lines)
-                .FirstOrDefaultAsync(existingReconciliation =>
-                    existingReconciliation.Id == request.ReconciliationId && existingReconciliation.AtmId == request.AtmId);
+            var reconciliation = await _reconciliationRepository.FindReadOnly(request.AtmId, request.ReconciliationId);
             if (reconciliation == null)
             {
                 throw ReconciliationNotFound(request.ReconciliationId);
@@ -58,8 +59,8 @@ namespace Fimple.Atm.Application.Services
         {
             var userName = RequireUserName(request.UserName);
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             if (atm.Status != AtmStatus.Maintenance)
             {
                 throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
@@ -109,11 +110,11 @@ namespace Fimple.Atm.Application.Services
             reconciliation.TotalDifferenceInBaseCurrency = totalDifferenceInBaseCurrency;
             var needsApproval = totalDifferenceInBaseCurrency > ReconciliationRules.APPROVAL_THRESHOLD_IN_BASE_CURRENCY;
             reconciliation.Status = needsApproval ? ReconciliationStatus.AwaitingApproval : ReconciliationStatus.Completed;
-            _appDbContext.Reconciliations.Add(reconciliation);
+            _reconciliationRepository.Add(reconciliation);
 
             atm.UpdatedAt = now;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return ReconciliationModelMapper.ToAddReturn(reconciliation, atm.Cassettes);
         }
@@ -122,12 +123,9 @@ namespace Fimple.Atm.Application.Services
         {
             var approverName = RequireUserName(request.UserName);
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
-            var reconciliation = await _appDbContext.Reconciliations
-                .Include(existingReconciliation => existingReconciliation.Lines)
-                .FirstOrDefaultAsync(existingReconciliation =>
-                    existingReconciliation.Id == request.ReconciliationId && existingReconciliation.AtmId == request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
+            var reconciliation = await _reconciliationRepository.Find(request.AtmId, request.ReconciliationId);
             if (reconciliation == null)
             {
                 throw ReconciliationNotFound(request.ReconciliationId);
@@ -152,21 +150,21 @@ namespace Fimple.Atm.Application.Services
             reconciliation.ApprovedAt = now;
             atm.UpdatedAt = now;
 
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return ReconciliationModelMapper.ToApproveReturn(reconciliation, atm.Cassettes);
         }
 
         private async Task<List<Cassette>> LoadCassettes(Guid atmId)
         {
-            var atmExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Id == atmId);
+            var atmExists = await _atmRepository.Exists(atmId);
             if (!atmExists)
             {
                 throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {atmId}");
             }
 
-            return await _appDbContext.Cassettes.AsNoTracking().Where(cassette => cassette.AtmId == atmId).ToListAsync();
+            return await _atmRepository.GetCassettesReadOnly(atmId);
         }
 
         private static NotFoundException ReconciliationNotFound(Guid reconciliationId)
@@ -186,8 +184,7 @@ namespace Fimple.Atm.Application.Services
 
         private async Task EnsureNoReconciliationAwaitingApproval(AtmMachine atm)
         {
-            var hasPendingReconciliation = await _appDbContext.Reconciliations.AnyAsync(reconciliation =>
-                reconciliation.AtmId == atm.Id && reconciliation.Status == ReconciliationStatus.AwaitingApproval);
+            var hasPendingReconciliation = await _reconciliationRepository.HasAwaitingApproval(atm.Id);
             if (hasPendingReconciliation)
             {
                 throw new ConflictException(ErrorCodes.RECONCILIATION_AWAITING_APPROVAL,
@@ -270,9 +267,7 @@ namespace Fimple.Atm.Application.Services
 
         private async Task<Dictionary<Currency, decimal>> LoadExchangeRates()
         {
-            return await _appDbContext.ExchangeRates
-                .AsNoTracking()
-                .ToDictionaryAsync(exchangeRate => exchangeRate.Currency, exchangeRate => exchangeRate.RateToBaseCurrency);
+            return await _exchangeRateRepository.GetRatesToBaseCurrency();
         }
 
         private static decimal GetBaseCurrencyValue((Currency Currency, Denomination Denomination) noteType, int difference, Dictionary<Currency, decimal> rates)

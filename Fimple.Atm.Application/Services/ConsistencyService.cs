@@ -1,63 +1,58 @@
-using System.Data;
 using Fimple.Atm.Domain.Constants;
 using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Application.Services
 {
     public class ConsistencyService : IConsistencyService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
+        private readonly ICassetteMovementRepository _movementRepository;
         private readonly TimeProvider _timeProvider;
 
-        public ConsistencyService(AppDbContext appDbContext, TimeProvider timeProvider)
+        public ConsistencyService(
+            IUnitOfWork unitOfWork,
+            IAtmRepository atmRepository,
+            ICassetteMovementRepository movementRepository,
+            TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
+            _movementRepository = movementRepository;
             _timeProvider = timeProvider;
         }
 
         public async Task<ConsistencyModel.Check.Return> CheckConsistency(ConsistencyModel.Check.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead);
+            await using var transaction = await _unitOfWork.BeginRepeatableReadTransaction();
 
-            var atmExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Id == request.AtmId);
+            var atmExists = await _atmRepository.Exists(request.AtmId);
             if (!atmExists)
             {
                 throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {request.AtmId}");
             }
 
-            var cassettes = await _appDbContext.Cassettes
-                .AsNoTracking()
-                .Include(cassette => cassette.Contents)
-                .Where(cassette => cassette.AtmId == request.AtmId)
-                .ToListAsync();
+            var cassettes = await _atmRepository.GetCassettesWithContentsReadOnly(request.AtmId);
             var cassetteIds = cassettes.Select(cassette => cassette.Id).ToList();
 
-            var movementSums = await _appDbContext.CassetteMovements
-                .AsNoTracking()
-                .Where(movement => cassetteIds.Contains(movement.CassetteId))
-                .GroupBy(movement => new { movement.CassetteId, movement.Currency, movement.Denomination })
-                .Select(group => new MovementSum(
-                    group.Key.CassetteId,
-                    group.Key.Currency,
-                    group.Key.Denomination,
-                    group.Sum(movement => movement.NoteCountDelta),
-                    group.Sum(movement => movement.ReservedCountDelta)))
-                .ToListAsync();
+            var movementSums = await _movementRepository.GetSums(cassetteIds);
 
             var entries = BuildEntries(cassettes, movementSums);
             var differences = entries.Where(entry => !entry.IsConsistent).ToList();
 
+            var checkedAt = _timeProvider.GetUtcNow().UtcDateTime;
+            var isConsistent = differences.Count == 0;
+            var differenceCount = differences.Count;
+
             return new ConsistencyModel.Check.Return
             {
                 AtmId = request.AtmId,
-                CheckedAt = _timeProvider.GetUtcNow().UtcDateTime,
-                IsConsistent = differences.Count == 0,
-                DifferenceCount = differences.Count,
+                CheckedAt = checkedAt,
+                IsConsistent = isConsistent,
+                DifferenceCount = differenceCount,
                 Differences = differences,
                 Entries = entries
             };
@@ -65,7 +60,7 @@ namespace Fimple.Atm.Application.Services
 
         private static List<ConsistencyModel.EntryItem> BuildEntries(
             List<Domain.Entities.Cassette> cassettes,
-            List<MovementSum> movementSums)
+            List<CassetteMovementSum> movementSums)
         {
             var entries = new List<ConsistencyModel.EntryItem>();
 
@@ -107,8 +102,5 @@ namespace Fimple.Atm.Application.Services
             }
 
             return entries;
-        }
-
-        private sealed record MovementSum(Guid CassetteId, Currency Currency, Denomination Denomination, int NoteCount, int ReservedCount);
-    }
+        }    }
 }

@@ -1,20 +1,18 @@
 using Fimple.Atm.Domain.Entities;
 using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Interfaces;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Application.Services
 {
     public class QuoteReservationReleaser : IQuoteReservationReleaser
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IWithdrawalQuoteRepository _quoteRepository;
         private readonly ICassetteMovementRecorder _cassetteMovementRecorder;
         private readonly TimeProvider _timeProvider;
 
-        public QuoteReservationReleaser(AppDbContext appDbContext, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
+        public QuoteReservationReleaser(IWithdrawalQuoteRepository quoteRepository, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _quoteRepository = quoteRepository;
             _cassetteMovementRecorder = cassetteMovementRecorder;
             _timeProvider = timeProvider;
         }
@@ -49,11 +47,7 @@ namespace Fimple.Atm.Application.Services
         public async Task<int> ReleaseExpiredQuotes(AtmMachine atm)
         {
             var now = _timeProvider.GetUtcNow().UtcDateTime;
-            var expiredQuotes = await _appDbContext.WithdrawalQuotes
-                .Include(quote => quote.Options)
-                .ThenInclude(option => option.Items)
-                .Where(quote => quote.AtmId == atm.Id && quote.Status == QuoteStatus.Pending && quote.ExpiresAt <= now)
-                .ToListAsync();
+            var expiredQuotes = await _quoteRepository.GetExpiredPending(atm.Id, now);
 
             foreach (var expiredQuote in expiredQuotes)
             {
@@ -65,11 +59,7 @@ namespace Fimple.Atm.Application.Services
 
         public async Task<int> ReleasePendingQuotes(AtmMachine atm, QuoteStatus newStatus)
         {
-            var pendingQuotes = await _appDbContext.WithdrawalQuotes
-                .Include(quote => quote.Options)
-                .ThenInclude(option => option.Items)
-                .Where(quote => quote.AtmId == atm.Id && quote.Status == QuoteStatus.Pending)
-                .ToListAsync();
+            var pendingQuotes = await _quoteRepository.GetPending(atm.Id);
 
             foreach (var pendingQuote in pendingQuotes)
             {

@@ -4,46 +4,41 @@ using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Application.Services
 {
     public class AtmService : IAtmService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
+        private readonly IReconciliationRepository _reconciliationRepository;
         private readonly IQuoteReservationReleaser _quoteReservationReleaser;
         private readonly TimeProvider _timeProvider;
 
-        public AtmService(AppDbContext appDbContext, IQuoteReservationReleaser quoteReservationReleaser, TimeProvider timeProvider)
+        public AtmService(
+            IUnitOfWork unitOfWork,
+            IAtmRepository atmRepository,
+            IReconciliationRepository reconciliationRepository,
+            IQuoteReservationReleaser quoteReservationReleaser,
+            TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
+            _reconciliationRepository = reconciliationRepository;
             _quoteReservationReleaser = quoteReservationReleaser;
             _timeProvider = timeProvider;
         }
 
         public async Task<AtmModel.Get.Return> GetAtm(AtmModel.Get.Request request)
         {
-            var items = await _appDbContext.AtmMachines
-                .AsNoTracking()
-                .OrderBy(atm => atm.Name)
-                .Select(atm => new AtmModel.AtmItem
-                {
-                    Id = atm.Id,
-                    Name = atm.Name,
-                    Status = atm.Status
-                })
-                .ToListAsync();
+            var atms = await _atmRepository.GetAllReadOnly();
+            var items = atms.Select(ToAtmItem).ToList();
             return new AtmModel.Get.Return { Items = items };
         }
 
         public async Task<AtmModel.GetDetail.Return> GetAtmDetail(AtmModel.GetDetail.Request request)
         {
-            var atm = await _appDbContext.AtmMachines
-                .AsNoTracking()
-                .Include(atmMachine => atmMachine.Cassettes)
-                .ThenInclude(cassette => cassette.Contents)
-                .FirstOrDefaultAsync(atmMachine => atmMachine.Id == request.AtmId);
+            var atm = await _atmRepository.FindWithCassettesReadOnly(request.AtmId);
             if (atm == null)
             {
                 throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {request.AtmId}");
@@ -55,21 +50,22 @@ namespace Fimple.Atm.Application.Services
         public async Task<AtmModel.Add.Return> AddAtm(AtmModel.Add.Request request)
         {
             var name = request.Name.Trim();
-            var nameExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Name == name);
+            var nameExists = await _atmRepository.NameExists(name);
             if (nameExists)
             {
                 throw new ConflictException(ErrorCodes.ATM_NAME_ALREADY_EXISTS, $"An ATM named '{name}' already exists.");
             }
 
+            var createdAt = _timeProvider.GetUtcNow().UtcDateTime;
             var atm = new AtmMachine
             {
                 Id = Guid.NewGuid(),
                 Name = name,
                 Status = AtmStatus.Unconfigured,
-                CreatedAt = _timeProvider.GetUtcNow().UtcDateTime
+                CreatedAt = createdAt
             };
-            _appDbContext.AtmMachines.Add(atm);
-            await _appDbContext.SaveChangesAsync();
+            _atmRepository.Add(atm);
+            await _unitOfWork.SaveChanges();
 
             return new AtmModel.Add.Return
             {
@@ -81,8 +77,8 @@ namespace Fimple.Atm.Application.Services
 
         public async Task<AtmModel.PutInService.Return> PutInService(AtmModel.PutInService.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
 
             if (!AtmStatusRules.CanPutInService(atm.Status))
             {
@@ -94,8 +90,8 @@ namespace Fimple.Atm.Application.Services
 
             atm.Status = AtmStatus.InService;
             atm.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return new AtmModel.PutInService.Return
             {
@@ -107,8 +103,8 @@ namespace Fimple.Atm.Application.Services
 
         public async Task<AtmModel.EnterMaintenance.Return> EnterMaintenance(AtmModel.EnterMaintenance.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
 
             if (!AtmStatusRules.CanEnterMaintenance(atm.Status))
             {
@@ -120,8 +116,8 @@ namespace Fimple.Atm.Application.Services
 
             atm.Status = AtmStatus.Maintenance;
             atm.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return new AtmModel.EnterMaintenance.Return
             {
@@ -131,10 +127,19 @@ namespace Fimple.Atm.Application.Services
             };
         }
 
+        private static AtmModel.AtmItem ToAtmItem(AtmMachine atm)
+        {
+            return new AtmModel.AtmItem
+            {
+                Id = atm.Id,
+                Name = atm.Name,
+                Status = atm.Status
+            };
+        }
+
         private async Task EnsureNoReconciliationAwaitingApproval(AtmMachine atm)
         {
-            var hasPendingReconciliation = await _appDbContext.Reconciliations.AnyAsync(reconciliation =>
-                reconciliation.AtmId == atm.Id && reconciliation.Status == ReconciliationStatus.AwaitingApproval);
+            var hasPendingReconciliation = await _reconciliationRepository.HasAwaitingApproval(atm.Id);
             if (hasPendingReconciliation)
             {
                 throw new ConflictException(ErrorCodes.RECONCILIATION_AWAITING_APPROVAL,

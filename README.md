@@ -88,11 +88,13 @@ Enums use upper snake case in JSON (`TRY`, `IN_SERVICE`, `RECONCILIATION_ADJUSTM
 
 The layout follows the Dashboard API of the pinqponq server (separate Api, Application, Domain, Infrastructure and Worker projects; `XModel.Action.Request` / `.Return` classes; `IXService` interfaces in Domain; one `ConfigureXEntity` method per entity; `t_` table prefix; extension methods for startup), with the places where the assignment asks for something different (ProblemDetails, REST routes, `X-User` instead of JWT, real-database tests, Swagger) following the assignment.
 
+The dependencies point inward: Domain depends on nothing, Application and Infrastructure depend only on Domain, and the API and the worker (the composition roots) reference all three. The Application services reach the database through repository interfaces and a unit of work declared in Domain and implemented in Infrastructure, so they contain no EF Core code.
+
 ```
 Fimple.Atm.Api            controllers, exception middleware, OpenAPI, health checks
-Fimple.Atm.Application    services, note selector, deposit allocator, movement recorder
-Fimple.Atm.Domain         entities, enums, rule constants, models, interfaces, exceptions
-Fimple.Atm.Infrastructure AppDbContext, EF Core migrations, PostgreSQL helpers
+Fimple.Atm.Application    services, note selector, deposit allocator, movement recorder (depends on Domain only)
+Fimple.Atm.Domain         entities, enums, rule constants, models, service and repository interfaces, exceptions
+Fimple.Atm.Infrastructure AppDbContext, EF Core migrations, repositories and unit of work, PostgreSQL helpers
 Fimple.Atm.Worker         quote expiry worker and outbox worker (BackgroundService)
 Fimple.Atm.Tests          unit and integration tests
 ```
@@ -176,7 +178,6 @@ Points the assignment leaves open, and what I decided:
 - **Outbox delivery is at-least-once** and the only consumer logs the event. If the worker dies between logging and marking, the event is logged again.
 - **Stale reservations in reports.** The report can show the reservation of an expired quote as reserved for up to one sweep interval (5 seconds) until the worker releases it.
 - **Missing features outside the assignment:** reject action for reconciliations, pagination of lists, editing or deleting an ATM, a rates endpoint, rate history (a reconciliation uses the current rates and does not store which ones).
-- **Layering.** The Application project references Infrastructure and uses `AppDbContext` directly, as the Dashboard services do, which is looser than a strict "Application depends only on Domain" layering. A repository layer would fix it at the cost of a lot of code.
 
 ## AI tools
 

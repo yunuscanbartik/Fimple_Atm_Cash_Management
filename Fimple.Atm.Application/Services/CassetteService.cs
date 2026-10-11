@@ -4,19 +4,20 @@ using Fimple.Atm.Domain.Enums;
 using Fimple.Atm.Domain.Exceptions;
 using Fimple.Atm.Domain.Interfaces;
 using Fimple.Atm.Domain.Models;
-using Fimple.Atm.Infrastructure.PostgreSQL;
 
 namespace Fimple.Atm.Application.Services
 {
     public class CassetteService : ICassetteService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAtmRepository _atmRepository;
         private readonly ICassetteMovementRecorder _cassetteMovementRecorder;
         private readonly TimeProvider _timeProvider;
 
-        public CassetteService(AppDbContext appDbContext, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
+        public CassetteService(IUnitOfWork unitOfWork, IAtmRepository atmRepository, ICassetteMovementRecorder cassetteMovementRecorder, TimeProvider timeProvider)
         {
-            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+            _atmRepository = atmRepository;
             _cassetteMovementRecorder = cassetteMovementRecorder;
             _timeProvider = timeProvider;
         }
@@ -25,8 +26,8 @@ namespace Fimple.Atm.Application.Services
         {
             CassetteConfigurationValidator.Validate(request.Cassettes);
 
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             if (!AtmStatusRules.CanConfigureCassettes(atm.Status))
             {
                 throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
@@ -45,16 +46,16 @@ namespace Fimple.Atm.Application.Services
             }
 
             atm.UpdatedAt = now;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return AtmModelMapper.ToConfigureCassettesReturn(atm);
         }
 
         public async Task<AtmModel.LoadCash.Return> LoadCash(AtmModel.LoadCash.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             if (!AtmStatusRules.CanLoadCash(atm.Status))
             {
                 throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
@@ -72,16 +73,16 @@ namespace Fimple.Atm.Application.Services
             }
 
             atm.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return AtmModelMapper.ToLoadCashReturn(atm);
         }
 
         public async Task<AtmModel.UnloadCash.Return> UnloadCash(AtmModel.UnloadCash.Request request)
         {
-            await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
+            await using var transaction = await _unitOfWork.BeginTransaction();
+            var atm = await _atmRepository.LoadForUpdate(request.AtmId);
             if (!AtmStatusRules.CanUnloadCash(atm.Status))
             {
                 throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
@@ -94,8 +95,8 @@ namespace Fimple.Atm.Application.Services
             }
 
             atm.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;
-            await _appDbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _unitOfWork.SaveChanges();
+            await transaction.Commit();
 
             return AtmModelMapper.ToUnloadCashReturn(atm);
         }
@@ -135,7 +136,7 @@ namespace Fimple.Atm.Application.Services
                     $"Cassette {cassette.Position} still holds notes and cannot be reconfigured. Unload it first.");
             }
 
-            _appDbContext.CassetteContents.RemoveRange(cassette.Contents);
+            _atmRepository.RemoveContents(cassette.Contents);
             cassette.Contents.Clear();
             cassette.Kind = configuration.Kind;
             cassette.Currency = configuration.Currency;
