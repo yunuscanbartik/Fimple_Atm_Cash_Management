@@ -6,15 +6,9 @@ namespace Fimple.Atm.Application.Services
 {
     internal static class WithdrawalModelMapper
     {
-        public static WithdrawalModel.QuoteItem ToQuoteItem(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
+        public static WithdrawalModel.CreateQuote.Return ToCreateQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
         {
-            var positions = cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
-            var options = quote.Options
-                .OrderBy(option => option.OptionType)
-                .Select(option => ToOptionItem(option, positions))
-                .ToList();
-
-            return new WithdrawalModel.QuoteItem
+            return new WithdrawalModel.CreateQuote.Return
             {
                 QuoteId = quote.Id,
                 AtmId = quote.AtmId,
@@ -23,17 +17,48 @@ namespace Fimple.Atm.Application.Services
                 Status = GetEffectiveStatus(quote, now),
                 MaskedCardNumber = quote.MaskedCardNumber,
                 ExpiresAt = quote.ExpiresAt,
-                IsExactMatch = quote.Options.Any(option => option.OptionType == QuoteOptionType.Exact),
-                Options = options
+                IsExactMatch = HasExactOption(quote),
+                Options = ToOptionItems(quote, cassettes)
             };
         }
 
-        public static WithdrawalModel.ConfirmItem ToConfirmItem(WithdrawalQuote quote, WithdrawalQuoteOption confirmedOption, IEnumerable<Cassette> cassettes)
+        public static WithdrawalModel.GetQuote.Return ToGetQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
         {
-            var positions = cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
-            var optionItem = ToOptionItem(confirmedOption, positions);
+            return new WithdrawalModel.GetQuote.Return
+            {
+                QuoteId = quote.Id,
+                AtmId = quote.AtmId,
+                Currency = quote.Currency,
+                RequestedAmount = quote.RequestedAmount,
+                Status = GetEffectiveStatus(quote, now),
+                MaskedCardNumber = quote.MaskedCardNumber,
+                ExpiresAt = quote.ExpiresAt,
+                IsExactMatch = HasExactOption(quote),
+                Options = ToOptionItems(quote, cassettes)
+            };
+        }
 
-            return new WithdrawalModel.ConfirmItem
+        public static WithdrawalModel.CancelQuote.Return ToCancelQuoteReturn(WithdrawalQuote quote, IEnumerable<Cassette> cassettes, DateTime now)
+        {
+            return new WithdrawalModel.CancelQuote.Return
+            {
+                QuoteId = quote.Id,
+                AtmId = quote.AtmId,
+                Currency = quote.Currency,
+                RequestedAmount = quote.RequestedAmount,
+                Status = GetEffectiveStatus(quote, now),
+                MaskedCardNumber = quote.MaskedCardNumber,
+                ExpiresAt = quote.ExpiresAt,
+                IsExactMatch = HasExactOption(quote),
+                Options = ToOptionItems(quote, cassettes)
+            };
+        }
+
+        public static WithdrawalModel.ConfirmQuote.Return ToConfirmQuoteReturn(WithdrawalQuote quote, WithdrawalQuoteOption confirmedOption, IEnumerable<Cassette> cassettes)
+        {
+            var optionItem = ToOptionItem(confirmedOption, ToPositions(cassettes));
+
+            return new WithdrawalModel.ConfirmQuote.Return
             {
                 QuoteId = quote.Id,
                 AtmId = quote.AtmId,
@@ -50,6 +75,25 @@ namespace Fimple.Atm.Application.Services
         {
             var isLapsed = quote.Status == QuoteStatus.Pending && quote.ExpiresAt <= now;
             return isLapsed ? QuoteStatus.Expired : quote.Status;
+        }
+
+        private static bool HasExactOption(WithdrawalQuote quote)
+        {
+            return quote.Options.Any(option => option.OptionType == QuoteOptionType.Exact);
+        }
+
+        private static Dictionary<Guid, int> ToPositions(IEnumerable<Cassette> cassettes)
+        {
+            return cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
+        }
+
+        private static List<WithdrawalModel.OptionItem> ToOptionItems(WithdrawalQuote quote, IEnumerable<Cassette> cassettes)
+        {
+            var positions = ToPositions(cassettes);
+            return quote.Options
+                .OrderBy(option => option.OptionType)
+                .Select(option => ToOptionItem(option, positions))
+                .ToList();
         }
 
         private static WithdrawalModel.OptionItem ToOptionItem(WithdrawalQuoteOption option, Dictionary<Guid, int> positions)

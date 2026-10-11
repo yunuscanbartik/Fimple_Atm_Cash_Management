@@ -35,9 +35,9 @@ namespace Fimple.Atm.Api.Controllers
         /// Returns one reconciliation with its per-cassette lines.
         /// </summary>
         [HttpGet("reconciliations/{reconciliationId:guid}")]
-        [ProducesResponseType(typeof(ReconciliationModel.ReconciliationItem), 200)]
+        [ProducesResponseType(typeof(ReconciliationModel.GetDetail.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
-        public async Task<ActionResult<ReconciliationModel.ReconciliationItem>> GetReconciliationDetail(Guid atmId, Guid reconciliationId)
+        public async Task<ActionResult<ReconciliationModel.GetDetail.Return>> GetReconciliationDetail(Guid atmId, Guid reconciliationId)
         {
             var request = new ReconciliationModel.GetDetail.Request { AtmId = atmId, ReconciliationId = reconciliationId };
             var result = await _reconciliationService.GetReconciliationDetail(request);
@@ -50,11 +50,11 @@ namespace Fimple.Atm.Api.Controllers
         /// TRY 1,000 the reconciliation waits for approval by a different user. Requires the X-User header.
         /// </summary>
         [HttpPost("reconciliations")]
-        [ProducesResponseType(typeof(ReconciliationModel.ReconciliationItem), 201)]
+        [ProducesResponseType(typeof(ReconciliationModel.Add.Return), 201)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<ReconciliationModel.ReconciliationItem>> AddReconciliation(Guid atmId, [FromBody] ReconciliationModel.Add.Request request)
+        public async Task<ActionResult<ReconciliationModel.Add.Return>> AddReconciliation(Guid atmId, [FromBody] ReconciliationModel.Add.Request request)
         {
             request.AtmId = atmId;
             var result = await _reconciliationService.AddReconciliation(request);
@@ -66,12 +66,12 @@ namespace Fimple.Atm.Api.Controllers
         /// who entered the counts. Requires the X-User header.
         /// </summary>
         [HttpPost("reconciliations/{reconciliationId:guid}/approve")]
-        [ProducesResponseType(typeof(ReconciliationModel.ReconciliationItem), 200)]
+        [ProducesResponseType(typeof(ReconciliationModel.Approve.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         [ProducesResponseType(typeof(ProblemDetails), 403)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
-        public async Task<ActionResult<ReconciliationModel.ReconciliationItem>> ApproveReconciliation(Guid atmId, Guid reconciliationId)
+        public async Task<ActionResult<ReconciliationModel.Approve.Return>> ApproveReconciliation(Guid atmId, Guid reconciliationId)
         {
             var request = new ReconciliationModel.Approve.Request { AtmId = atmId, ReconciliationId = reconciliationId };
             request.SetUserName(Request.Headers[Filters.UserHeaderActionFilter.UserHeaderName].FirstOrDefault()?.Trim());

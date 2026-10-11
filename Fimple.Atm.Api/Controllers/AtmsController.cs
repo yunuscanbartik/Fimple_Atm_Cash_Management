@@ -33,9 +33,9 @@ namespace Fimple.Atm.Api.Controllers
         /// Returns an ATM with its cassettes, note counts per denomination and totals per currency.
         /// </summary>
         [HttpGet("{atmId:guid}")]
-        [ProducesResponseType(typeof(AtmModel.AtmDetail), 200)]
+        [ProducesResponseType(typeof(AtmModel.GetDetail.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
-        public async Task<ActionResult<AtmModel.AtmDetail>> GetAtmDetail(Guid atmId)
+        public async Task<ActionResult<AtmModel.GetDetail.Return>> GetAtmDetail(Guid atmId)
         {
             var request = new AtmModel.GetDetail.Request { AtmId = atmId };
             var result = await _atmService.GetAtmDetail(request);
@@ -59,10 +59,10 @@ namespace Fimple.Atm.Api.Controllers
         /// Allowed during initial setup or in MAINTENANCE.
         /// </summary>
         [HttpPut("{atmId:guid}/cassettes")]
-        [ProducesResponseType(typeof(AtmModel.AtmDetail), 200)]
+        [ProducesResponseType(typeof(AtmModel.ConfigureCassettes.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<AtmModel.AtmDetail>> ConfigureCassettes(Guid atmId, [FromBody] AtmModel.ConfigureCassettes.Request request)
+        public async Task<ActionResult<AtmModel.ConfigureCassettes.Return>> ConfigureCassettes(Guid atmId, [FromBody] AtmModel.ConfigureCassettes.Request request)
         {
             request.AtmId = atmId;
             var result = await _cassetteService.ConfigureCassettes(request);
@@ -73,10 +73,10 @@ namespace Fimple.Atm.Api.Controllers
         /// Records cash loaded into the cassettes by hand.
         /// </summary>
         [HttpPost("{atmId:guid}/load")]
-        [ProducesResponseType(typeof(AtmModel.AtmDetail), 200)]
+        [ProducesResponseType(typeof(AtmModel.LoadCash.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<AtmModel.AtmDetail>> LoadCash(Guid atmId, [FromBody] AtmModel.LoadCash.Request request)
+        public async Task<ActionResult<AtmModel.LoadCash.Return>> LoadCash(Guid atmId, [FromBody] AtmModel.LoadCash.Request request)
         {
             request.AtmId = atmId;
             var result = await _cassetteService.LoadCash(request);
@@ -87,10 +87,10 @@ namespace Fimple.Atm.Api.Controllers
         /// Records cash removed from the cassettes by hand.
         /// </summary>
         [HttpPost("{atmId:guid}/unload")]
-        [ProducesResponseType(typeof(AtmModel.AtmDetail), 200)]
+        [ProducesResponseType(typeof(AtmModel.UnloadCash.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<AtmModel.AtmDetail>> UnloadCash(Guid atmId, [FromBody] AtmModel.UnloadCash.Request request)
+        public async Task<ActionResult<AtmModel.UnloadCash.Return>> UnloadCash(Guid atmId, [FromBody] AtmModel.UnloadCash.Request request)
         {
             request.AtmId = atmId;
             var result = await _cassetteService.UnloadCash(request);

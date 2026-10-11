@@ -38,7 +38,7 @@ namespace Fimple.Atm.Application.Services
             return new ReconciliationModel.Get.Return { Items = items };
         }
 
-        public async Task<ReconciliationModel.ReconciliationItem> GetReconciliationDetail(ReconciliationModel.GetDetail.Request request)
+        public async Task<ReconciliationModel.GetDetail.Return> GetReconciliationDetail(ReconciliationModel.GetDetail.Request request)
         {
             var cassettes = await LoadCassettes(request.AtmId);
             var reconciliation = await _appDbContext.Reconciliations
@@ -51,10 +51,10 @@ namespace Fimple.Atm.Application.Services
                 throw ReconciliationNotFound(request.ReconciliationId);
             }
 
-            return ReconciliationModelMapper.ToReconciliationItem(reconciliation, cassettes);
+            return ReconciliationModelMapper.ToGetDetailReturn(reconciliation, cassettes);
         }
 
-        public async Task<ReconciliationModel.ReconciliationItem> AddReconciliation(ReconciliationModel.Add.Request request)
+        public async Task<ReconciliationModel.Add.Return> AddReconciliation(ReconciliationModel.Add.Request request)
         {
             var userName = RequireUserName(request.UserName);
 
@@ -115,10 +115,10 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return ReconciliationModelMapper.ToReconciliationItem(reconciliation, atm.Cassettes);
+            return ReconciliationModelMapper.ToAddReturn(reconciliation, atm.Cassettes);
         }
 
-        public async Task<ReconciliationModel.ReconciliationItem> ApproveReconciliation(ReconciliationModel.Approve.Request request)
+        public async Task<ReconciliationModel.Approve.Return> ApproveReconciliation(ReconciliationModel.Approve.Request request)
         {
             var approverName = RequireUserName(request.UserName);
 
@@ -155,7 +155,7 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return ReconciliationModelMapper.ToReconciliationItem(reconciliation, atm.Cassettes);
+            return ReconciliationModelMapper.ToApproveReturn(reconciliation, atm.Cassettes);
         }
 
         private async Task<List<Cassette>> LoadCassettes(Guid atmId)

@@ -31,7 +31,7 @@ namespace Fimple.Atm.Application.Services
             _timeProvider = timeProvider;
         }
 
-        public async Task<WithdrawalModel.QuoteItem> CreateQuote(WithdrawalModel.CreateQuote.Request request)
+        public async Task<WithdrawalModel.CreateQuote.Return> CreateQuote(WithdrawalModel.CreateQuote.Request request)
         {
             var cardHash = _cardHasher.Hash(request.CardNumber);
             var maskedCardNumber = _cardHasher.Mask(request.CardNumber);
@@ -67,10 +67,10 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return WithdrawalModelMapper.ToQuoteItem(quote, atm.Cassettes, now);
+            return WithdrawalModelMapper.ToCreateQuoteReturn(quote, atm.Cassettes, now);
         }
 
-        public async Task<WithdrawalModel.QuoteItem> GetQuote(WithdrawalModel.GetQuote.Request request)
+        public async Task<WithdrawalModel.GetQuote.Return> GetQuote(WithdrawalModel.GetQuote.Request request)
         {
             var quote = await _appDbContext.WithdrawalQuotes
                 .AsNoTracking()
@@ -86,10 +86,10 @@ namespace Fimple.Atm.Application.Services
                 .AsNoTracking()
                 .Where(cassette => cassette.AtmId == request.AtmId)
                 .ToListAsync();
-            return WithdrawalModelMapper.ToQuoteItem(quote, cassettes, _timeProvider.GetUtcNow().UtcDateTime);
+            return WithdrawalModelMapper.ToGetQuoteReturn(quote, cassettes, _timeProvider.GetUtcNow().UtcDateTime);
         }
 
-        public async Task<WithdrawalModel.ConfirmItem> ConfirmQuote(WithdrawalModel.ConfirmQuote.Request request)
+        public async Task<WithdrawalModel.ConfirmQuote.Return> ConfirmQuote(WithdrawalModel.ConfirmQuote.Request request)
         {
             var idempotencyKey = ValidateIdempotencyKey(request.IdempotencyKey);
 
@@ -129,10 +129,10 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return WithdrawalModelMapper.ToConfirmItem(quote, chosenOption, atm.Cassettes);
+            return WithdrawalModelMapper.ToConfirmQuoteReturn(quote, chosenOption, atm.Cassettes);
         }
 
-        public async Task<WithdrawalModel.QuoteItem> CancelQuote(WithdrawalModel.CancelQuote.Request request)
+        public async Task<WithdrawalModel.CancelQuote.Return> CancelQuote(WithdrawalModel.CancelQuote.Request request)
         {
             await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
@@ -152,7 +152,7 @@ namespace Fimple.Atm.Application.Services
             }
 
             await transaction.CommitAsync();
-            return WithdrawalModelMapper.ToQuoteItem(quote, atm.Cassettes, now);
+            return WithdrawalModelMapper.ToCancelQuoteReturn(quote, atm.Cassettes, now);
         }
 
         private async Task<WithdrawalQuote> LoadQuote(Guid atmId, Guid quoteId)
@@ -212,7 +212,7 @@ namespace Fimple.Atm.Application.Services
             throw new ConflictException(ErrorCodes.InvalidAtmState, $"Cannot {action} while the ATM is {atm.Status}; it must be {AtmStatus.InService}.");
         }
 
-        private WithdrawalModel.ConfirmItem BuildReplayResponse(WithdrawalQuote quote, AtmMachine atm, QuoteOptionType? requestedOption)
+        private WithdrawalModel.ConfirmQuote.Return BuildReplayResponse(WithdrawalQuote quote, AtmMachine atm, QuoteOptionType? requestedOption)
         {
             var confirmedOption = quote.Options.FirstOrDefault(option => option.Id == quote.ConfirmedOptionId);
             if (confirmedOption == null)
@@ -227,7 +227,7 @@ namespace Fimple.Atm.Application.Services
                     "This idempotency key was already used with a different option for the same quote.");
             }
 
-            return WithdrawalModelMapper.ToConfirmItem(quote, confirmedOption, atm.Cassettes);
+            return WithdrawalModelMapper.ToConfirmQuoteReturn(quote, confirmedOption, atm.Cassettes);
         }
 
         private static WithdrawalQuoteOption ChooseOption(WithdrawalQuote quote, QuoteOptionType? requestedOption)

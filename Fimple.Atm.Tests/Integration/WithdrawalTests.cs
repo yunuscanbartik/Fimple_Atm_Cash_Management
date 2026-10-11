@@ -30,7 +30,7 @@ namespace Fimple.Atm.Tests.Integration
             var reservedCassette = await Atms.GetCassette(atmId, 2);
             Assert.Equal(1, reservedCassette.ReservedCount);
 
-            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmItem>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "debit-key"));
+            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "debit-key"));
 
             Assert.Equal(170m, confirm.Amount);
             var debitedCassette = await Atms.GetCassette(atmId, 2);
@@ -54,7 +54,7 @@ namespace Fimple.Atm.Tests.Integration
             Assert.Equal(HttpStatusCode.UnprocessableEntity, withoutChoice.StatusCode);
             Assert.Equal("QUOTE_OPTION_REQUIRED", await ApiClient.ErrorCode(withoutChoice));
 
-            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmItem>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "choice-key", QuoteOptionType.Lower));
+            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "choice-key", QuoteOptionType.Lower));
 
             Assert.Equal(70m, confirm.Amount);
             var twentyCassette = await Atms.GetCassette(atmId, 4);
@@ -72,7 +72,7 @@ namespace Fimple.Atm.Tests.Integration
             var blocked = await Atms.RequestQuote(atmId, AtmTestHelper.NewCardNumber(), Currency.Try, 100);
             Assert.Equal(HttpStatusCode.UnprocessableEntity, blocked.StatusCode);
 
-            var cancelled = await ApiClient.Read<WithdrawalModel.QuoteItem>(
+            var cancelled = await ApiClient.Read<WithdrawalModel.CancelQuote.Return>(
                 await Api.Post($"/api/atms/{atmId}/withdrawals/quotes/{firstQuote.QuoteId}/cancel"));
             Assert.Equal(QuoteStatus.Cancelled, cancelled.Status);
 
@@ -122,7 +122,7 @@ namespace Fimple.Atm.Tests.Integration
             var releasedCount = await Fixture.WithScopedService<IQuoteExpiryService, int>(service => service.ReleaseExpiredQuotes());
 
             Assert.True(releasedCount >= 1);
-            var expired = await ApiClient.Read<WithdrawalModel.QuoteItem>(await Api.Get($"/api/atms/{atmId}/withdrawals/quotes/{quote.QuoteId}"));
+            var expired = await ApiClient.Read<WithdrawalModel.GetQuote.Return>(await Api.Get($"/api/atms/{atmId}/withdrawals/quotes/{quote.QuoteId}"));
             Assert.Equal(QuoteStatus.Expired, expired.Status);
             Assert.Equal(0, (await Atms.GetCassette(atmId, 2)).ReservedCount);
             await Atms.AssertConsistent(atmId);
@@ -146,8 +146,8 @@ namespace Fimple.Atm.Tests.Integration
             var atmId = await Atms.CreateInServiceAtm(AtmTestHelper.StandardCassettes, new LoadItem(2, 5));
             var quote = await Atms.CreateQuote(atmId, AtmTestHelper.NewCardNumber(), Currency.Try, 200);
 
-            var first = await ApiClient.Read<WithdrawalModel.ConfirmItem>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "repeat-key"));
-            var second = await ApiClient.Read<WithdrawalModel.ConfirmItem>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "repeat-key"));
+            var first = await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "repeat-key"));
+            var second = await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "repeat-key"));
 
             Assert.Equal(first.Amount, second.Amount);
             Assert.Equal(first.NoteCount, second.NoteCount);

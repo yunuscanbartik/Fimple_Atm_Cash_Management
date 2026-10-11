@@ -4,9 +4,9 @@ namespace Fimple.Atm.Domain.Interfaces
 {
     public interface IWithdrawalService
     {
-        public Task<WithdrawalModel.QuoteItem> CreateQuote(WithdrawalModel.CreateQuote.Request request);
-        public Task<WithdrawalModel.QuoteItem> GetQuote(WithdrawalModel.GetQuote.Request request);
-        public Task<WithdrawalModel.ConfirmItem> ConfirmQuote(WithdrawalModel.ConfirmQuote.Request request);
-        public Task<WithdrawalModel.QuoteItem> CancelQuote(WithdrawalModel.CancelQuote.Request request);
+        public Task<WithdrawalModel.CreateQuote.Return> CreateQuote(WithdrawalModel.CreateQuote.Request request);
+        public Task<WithdrawalModel.GetQuote.Return> GetQuote(WithdrawalModel.GetQuote.Request request);
+        public Task<WithdrawalModel.ConfirmQuote.Return> ConfirmQuote(WithdrawalModel.ConfirmQuote.Request request);
+        public Task<WithdrawalModel.CancelQuote.Return> CancelQuote(WithdrawalModel.CancelQuote.Request request);
     }
 }

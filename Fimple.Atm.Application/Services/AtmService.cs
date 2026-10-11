@@ -37,7 +37,7 @@ namespace Fimple.Atm.Application.Services
             return new AtmModel.Get.Return { Items = items };
         }
 
-        public async Task<AtmModel.AtmDetail> GetAtmDetail(AtmModel.GetDetail.Request request)
+        public async Task<AtmModel.GetDetail.Return> GetAtmDetail(AtmModel.GetDetail.Request request)
         {
             var atm = await _appDbContext.AtmMachines
                 .AsNoTracking()
@@ -49,7 +49,7 @@ namespace Fimple.Atm.Application.Services
                 throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {request.AtmId}");
             }
 
-            return AtmModelMapper.ToAtmDetail(atm);
+            return AtmModelMapper.ToGetDetailReturn(atm);
         }
 
         public async Task<AtmModel.Add.Return> AddAtm(AtmModel.Add.Request request)

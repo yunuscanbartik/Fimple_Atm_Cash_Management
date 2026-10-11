@@ -4,8 +4,8 @@ namespace Fimple.Atm.Domain.Interfaces
 {
     public interface ICassetteService
     {
-        public Task<AtmModel.AtmDetail> ConfigureCassettes(AtmModel.ConfigureCassettes.Request request);
-        public Task<AtmModel.AtmDetail> LoadCash(AtmModel.LoadCash.Request request);
-        public Task<AtmModel.AtmDetail> UnloadCash(AtmModel.UnloadCash.Request request);
+        public Task<AtmModel.ConfigureCassettes.Return> ConfigureCassettes(AtmModel.ConfigureCassettes.Request request);
+        public Task<AtmModel.LoadCash.Return> LoadCash(AtmModel.LoadCash.Request request);
+        public Task<AtmModel.UnloadCash.Return> UnloadCash(AtmModel.UnloadCash.Request request);
     }
 }

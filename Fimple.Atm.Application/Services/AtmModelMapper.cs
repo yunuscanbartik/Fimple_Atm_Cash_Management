@@ -6,9 +6,45 @@ namespace Fimple.Atm.Application.Services
 {
     internal static class AtmModelMapper
     {
-        public static AtmModel.AtmDetail ToAtmDetail(AtmMachine atm)
+        public static AtmModel.GetDetail.Return ToGetDetailReturn(AtmMachine atm)
         {
-            return new AtmModel.AtmDetail
+            return new AtmModel.GetDetail.Return
+            {
+                Id = atm.Id,
+                Name = atm.Name,
+                Status = atm.Status,
+                Cassettes = ToCassetteItems(atm),
+                Totals = ToCurrencyTotals(atm)
+            };
+        }
+
+        public static AtmModel.ConfigureCassettes.Return ToConfigureCassettesReturn(AtmMachine atm)
+        {
+            return new AtmModel.ConfigureCassettes.Return
+            {
+                Id = atm.Id,
+                Name = atm.Name,
+                Status = atm.Status,
+                Cassettes = ToCassetteItems(atm),
+                Totals = ToCurrencyTotals(atm)
+            };
+        }
+
+        public static AtmModel.LoadCash.Return ToLoadCashReturn(AtmMachine atm)
+        {
+            return new AtmModel.LoadCash.Return
+            {
+                Id = atm.Id,
+                Name = atm.Name,
+                Status = atm.Status,
+                Cassettes = ToCassetteItems(atm),
+                Totals = ToCurrencyTotals(atm)
+            };
+        }
+
+        public static AtmModel.UnloadCash.Return ToUnloadCashReturn(AtmMachine atm)
+        {
+            return new AtmModel.UnloadCash.Return
             {
                 Id = atm.Id,
                 Name = atm.Name,

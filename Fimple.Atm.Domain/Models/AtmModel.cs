@@ -44,10 +44,31 @@ namespace Fimple.Atm.Domain.Models
             public required decimal Amount { get; set; }
         }
 
-        public class AtmDetail : AtmItem
+        public class CassetteConfigItem
         {
-            public required List<CassetteItem> Cassettes { get; set; }
-            public required List<CurrencyTotalItem> Totals { get; set; }
+            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
+            public required int Position { get; set; }
+
+            public required CassetteKind Kind { get; set; }
+
+            public Currency? Currency { get; set; }
+
+            [DefinedDenomination]
+            public int? Denomination { get; set; }
+        }
+
+        public class CashItem
+        {
+            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
+            public required int CassettePosition { get; set; }
+
+            public Currency? Currency { get; set; }
+
+            [DefinedDenomination]
+            public int? Denomination { get; set; }
+
+            [Range(1, AtmRules.CassetteCapacity, ErrorMessage = "Note count must be between 1 and the cassette capacity")]
+            public required int NoteCount { get; set; }
         }
 
         public class Get
@@ -69,6 +90,15 @@ namespace Fimple.Atm.Domain.Models
             {
 
             }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
+                public required List<CassetteItem> Cassettes { get; set; }
+                public required List<CurrencyTotalItem> Totals { get; set; }
+            }
         }
 
         public class Add
@@ -80,57 +110,50 @@ namespace Fimple.Atm.Domain.Models
                 public required string Name { get; set; }
             }
 
-            public class Return : AtmItem
+            public class Return
             {
-
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
             }
-        }
-
-        public class CassetteConfigItem
-        {
-            [Range(1, AtmRules.CassetteCount)]
-            public required int Position { get; set; }
-
-            public required CassetteKind Kind { get; set; }
-
-            public Currency? Currency { get; set; }
-
-            [DefinedDenomination]
-            public int? Denomination { get; set; }
         }
 
         public class ConfigureCassettes
         {
             public class Request : AtmRequestBase
             {
-                [Required]
+                [Required(ErrorMessage = "Cassettes are required")]
                 [MinLength(AtmRules.CassetteCount, ErrorMessage = "Exactly 5 cassettes must be provided")]
                 [MaxLength(AtmRules.CassetteCount, ErrorMessage = "Exactly 5 cassettes must be provided")]
                 public required List<CassetteConfigItem> Cassettes { get; set; }
             }
-        }
 
-        public class CashItem
-        {
-            [Range(1, AtmRules.CassetteCount)]
-            public required int CassettePosition { get; set; }
-
-            public Currency? Currency { get; set; }
-
-            [DefinedDenomination]
-            public int? Denomination { get; set; }
-
-            [Range(1, AtmRules.CassetteCapacity)]
-            public required int NoteCount { get; set; }
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
+                public required List<CassetteItem> Cassettes { get; set; }
+                public required List<CurrencyTotalItem> Totals { get; set; }
+            }
         }
 
         public class LoadCash
         {
             public class Request : AtmRequestBase
             {
-                [Required]
+                [Required(ErrorMessage = "Items are required")]
                 [MinLength(1, ErrorMessage = "At least one item is required")]
                 public required List<CashItem> Items { get; set; }
+            }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
+                public required List<CassetteItem> Cassettes { get; set; }
+                public required List<CurrencyTotalItem> Totals { get; set; }
             }
         }
 
@@ -138,9 +161,18 @@ namespace Fimple.Atm.Domain.Models
         {
             public class Request : AtmRequestBase
             {
-                [Required]
+                [Required(ErrorMessage = "Items are required")]
                 [MinLength(1, ErrorMessage = "At least one item is required")]
                 public required List<CashItem> Items { get; set; }
+            }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
+                public required List<CassetteItem> Cassettes { get; set; }
+                public required List<CurrencyTotalItem> Totals { get; set; }
             }
         }
 
@@ -151,9 +183,11 @@ namespace Fimple.Atm.Domain.Models
 
             }
 
-            public class Return : AtmItem
+            public class Return
             {
-
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
             }
         }
 
@@ -164,9 +198,11 @@ namespace Fimple.Atm.Domain.Models
 
             }
 
-            public class Return : AtmItem
+            public class Return
             {
-
+                public required Guid Id { get; set; }
+                public required string Name { get; set; }
+                public required AtmStatus Status { get; set; }
             }
         }
     }

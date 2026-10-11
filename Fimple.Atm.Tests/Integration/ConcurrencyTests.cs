@@ -88,10 +88,10 @@ namespace Fimple.Atm.Tests.Integration
             var responses = await Task.WhenAll(Enumerable.Range(0, 10)
                 .Select(_ => Atms.ConfirmQuote(atmId, quote.QuoteId, "same-key")));
 
-            var results = new List<WithdrawalModel.ConfirmItem>();
+            var results = new List<WithdrawalModel.ConfirmQuote.Return>();
             foreach (var response in responses)
             {
-                results.Add(await ApiClient.Read<WithdrawalModel.ConfirmItem>(response));
+                results.Add(await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(response));
             }
 
             Assert.All(results, result => Assert.Equal(300m, result.Amount));

@@ -16,10 +16,10 @@ namespace Fimple.Atm.Tests.Integration
         public async Task CreateConfigureLoadServeWithdrawDepositReconcileAndReport()
         {
             var atmId = await Atms.CreateAtm();
-            var created = await ApiClient.Read<AtmModel.AtmDetail>(await Api.Get($"/api/atms/{atmId}"));
+            var created = await ApiClient.Read<AtmModel.GetDetail.Return>(await Api.Get($"/api/atms/{atmId}"));
             Assert.Equal(AtmStatus.Unconfigured, created.Status);
 
-            var configured = await ApiClient.Read<AtmModel.AtmDetail>(
+            var configured = await ApiClient.Read<AtmModel.ConfigureCassettes.Return>(
                 await Api.Put($"/api/atms/{atmId}/cassettes", new { cassettes = AtmTestHelper.StandardCassettes }));
             Assert.Equal(AtmStatus.Configured, configured.Status);
             Assert.Equal(5, configured.Cassettes.Count);
@@ -28,7 +28,7 @@ namespace Fimple.Atm.Tests.Integration
             {
                 new LoadItem(2, 20), new LoadItem(3, 30), new LoadItem(4, 50), new LoadItem(5, 10)
             };
-            var loaded = await ApiClient.Read<AtmModel.AtmDetail>(await Api.Post($"/api/atms/{atmId}/load", new { items = loadItems }));
+            var loaded = await ApiClient.Read<AtmModel.LoadCash.Return>(await Api.Post($"/api/atms/{atmId}/load", new { items = loadItems }));
             Assert.Equal(AtmStatus.Loaded, loaded.Status);
 
             var inService = await ApiClient.Read<AtmModel.AtmItem>(await Api.Post($"/api/atms/{atmId}/put-in-service"));
@@ -36,7 +36,7 @@ namespace Fimple.Atm.Tests.Integration
 
             var quote = await Atms.CreateQuote(atmId, AtmTestHelper.NewCardNumber(), Currency.Try, 170);
             Assert.True(quote.IsExactMatch);
-            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmItem>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "e2e-key"));
+            var confirm = await ApiClient.Read<WithdrawalModel.ConfirmQuote.Return>(await Atms.ConfirmQuote(atmId, quote.QuoteId, "e2e-key"));
             Assert.Equal(QuoteStatus.Confirmed, confirm.Status);
             Assert.Equal(170m, confirm.Amount);
 
@@ -55,7 +55,7 @@ namespace Fimple.Atm.Tests.Integration
             var maintenance = await ApiClient.Read<AtmModel.AtmItem>(await Api.Post($"/api/atms/{atmId}/enter-maintenance"));
             Assert.Equal(AtmStatus.Maintenance, maintenance.Status);
 
-            var reconciliation = await ApiClient.Read<ReconciliationModel.ReconciliationItem>(await Api.Post(
+            var reconciliation = await ApiClient.Read<ReconciliationModel.Add.Return>(await Api.Post(
                 $"/api/atms/{atmId}/reconciliations",
                 new
                 {

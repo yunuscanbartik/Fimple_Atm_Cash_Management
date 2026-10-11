@@ -74,7 +74,7 @@ namespace Fimple.Atm.Tests.Integration
             var noUser = await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve");
             Assert.Equal(HttpStatusCode.BadRequest, noUser.StatusCode);
 
-            var approved = await ApiClient.Read<ReconciliationModel.ReconciliationItem>(
+            var approved = await ApiClient.Read<ReconciliationModel.Approve.Return>(
                 await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve", null, (AtmTestHelper.UserHeader, "bob")));
             Assert.Equal(ReconciliationStatus.Approved, approved.Status);
             Assert.Equal("bob", approved.ApprovedBy);
@@ -133,7 +133,7 @@ namespace Fimple.Atm.Tests.Integration
             return atmId;
         }
 
-        private async Task<ReconciliationModel.ReconciliationItem> Reconcile(Guid atmId, string userName, int pos2, int pos3, int pos4, int pos5)
+        private async Task<ReconciliationModel.Add.Return> Reconcile(Guid atmId, string userName, int pos2, int pos3, int pos4, int pos5)
         {
             var response = await Api.Post($"/api/atms/{atmId}/reconciliations", new
             {
@@ -145,7 +145,7 @@ namespace Fimple.Atm.Tests.Integration
                     new { cassettePosition = 5, countedNoteCount = pos5 }
                 }
             }, (AtmTestHelper.UserHeader, userName));
-            return await ApiClient.Read<ReconciliationModel.ReconciliationItem>(response);
+            return await ApiClient.Read<ReconciliationModel.Add.Return>(response);
         }
     }
 }

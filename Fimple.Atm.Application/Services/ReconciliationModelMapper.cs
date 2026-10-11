@@ -8,8 +8,81 @@ namespace Fimple.Atm.Application.Services
     {
         public static ReconciliationModel.ReconciliationItem ToReconciliationItem(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
         {
+            return new ReconciliationModel.ReconciliationItem
+            {
+                Id = reconciliation.Id,
+                AtmId = reconciliation.AtmId,
+                Status = reconciliation.Status,
+                TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
+                RequiresApproval = RequiresApproval(reconciliation),
+                CreatedBy = reconciliation.CreatedBy,
+                CreatedAt = reconciliation.CreatedAt,
+                ApprovedBy = reconciliation.ApprovedBy,
+                ApprovedAt = reconciliation.ApprovedAt,
+                Lines = ToLineItems(reconciliation, cassettes)
+            };
+        }
+
+        public static ReconciliationModel.GetDetail.Return ToGetDetailReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
+        {
+            return new ReconciliationModel.GetDetail.Return
+            {
+                Id = reconciliation.Id,
+                AtmId = reconciliation.AtmId,
+                Status = reconciliation.Status,
+                TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
+                RequiresApproval = RequiresApproval(reconciliation),
+                CreatedBy = reconciliation.CreatedBy,
+                CreatedAt = reconciliation.CreatedAt,
+                ApprovedBy = reconciliation.ApprovedBy,
+                ApprovedAt = reconciliation.ApprovedAt,
+                Lines = ToLineItems(reconciliation, cassettes)
+            };
+        }
+
+        public static ReconciliationModel.Add.Return ToAddReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
+        {
+            return new ReconciliationModel.Add.Return
+            {
+                Id = reconciliation.Id,
+                AtmId = reconciliation.AtmId,
+                Status = reconciliation.Status,
+                TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
+                RequiresApproval = RequiresApproval(reconciliation),
+                CreatedBy = reconciliation.CreatedBy,
+                CreatedAt = reconciliation.CreatedAt,
+                ApprovedBy = reconciliation.ApprovedBy,
+                ApprovedAt = reconciliation.ApprovedAt,
+                Lines = ToLineItems(reconciliation, cassettes)
+            };
+        }
+
+        public static ReconciliationModel.Approve.Return ToApproveReturn(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
+        {
+            return new ReconciliationModel.Approve.Return
+            {
+                Id = reconciliation.Id,
+                AtmId = reconciliation.AtmId,
+                Status = reconciliation.Status,
+                TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
+                RequiresApproval = RequiresApproval(reconciliation),
+                CreatedBy = reconciliation.CreatedBy,
+                CreatedAt = reconciliation.CreatedAt,
+                ApprovedBy = reconciliation.ApprovedBy,
+                ApprovedAt = reconciliation.ApprovedAt,
+                Lines = ToLineItems(reconciliation, cassettes)
+            };
+        }
+
+        private static bool RequiresApproval(Reconciliation reconciliation)
+        {
+            return reconciliation.TotalDifferenceInBaseCurrency > ReconciliationRules.ApprovalThresholdInBaseCurrency;
+        }
+
+        private static List<ReconciliationModel.LineItem> ToLineItems(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)
+        {
             var positions = cassettes.ToDictionary(cassette => cassette.Id, cassette => cassette.Position);
-            var lines = reconciliation.Lines
+            return reconciliation.Lines
                 .Select(line => new ReconciliationModel.LineItem
                 {
                     CassetteId = line.CassetteId,
@@ -24,20 +97,6 @@ namespace Fimple.Atm.Application.Services
                 .ThenBy(line => line.Currency)
                 .ThenBy(line => line.Denomination)
                 .ToList();
-
-            return new ReconciliationModel.ReconciliationItem
-            {
-                Id = reconciliation.Id,
-                AtmId = reconciliation.AtmId,
-                Status = reconciliation.Status,
-                TotalDifferenceInBaseCurrency = reconciliation.TotalDifferenceInBaseCurrency,
-                RequiresApproval = reconciliation.TotalDifferenceInBaseCurrency > ReconciliationRules.ApprovalThresholdInBaseCurrency,
-                CreatedBy = reconciliation.CreatedBy,
-                CreatedAt = reconciliation.CreatedAt,
-                ApprovedBy = reconciliation.ApprovedBy,
-                ApprovedAt = reconciliation.ApprovedAt,
-                Lines = lines
-            };
         }
     }
 }

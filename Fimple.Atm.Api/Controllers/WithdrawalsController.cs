@@ -22,10 +22,10 @@ namespace Fimple.Atm.Api.Controllers
         /// amount cannot be paid exactly, and reserves the offered notes for 60 seconds.
         /// </summary>
         [HttpPost("quotes")]
-        [ProducesResponseType(typeof(WithdrawalModel.QuoteItem), 201)]
+        [ProducesResponseType(typeof(WithdrawalModel.CreateQuote.Return), 201)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<WithdrawalModel.QuoteItem>> CreateQuote(Guid atmId, [FromBody] WithdrawalModel.CreateQuote.Request request)
+        public async Task<ActionResult<WithdrawalModel.CreateQuote.Return>> CreateQuote(Guid atmId, [FromBody] WithdrawalModel.CreateQuote.Request request)
         {
             request.AtmId = atmId;
             var result = await _withdrawalService.CreateQuote(request);
@@ -36,9 +36,9 @@ namespace Fimple.Atm.Api.Controllers
         /// Returns a quote. A quote past its 60 seconds is reported as EXPIRED.
         /// </summary>
         [HttpGet("quotes/{quoteId:guid}")]
-        [ProducesResponseType(typeof(WithdrawalModel.QuoteItem), 200)]
+        [ProducesResponseType(typeof(WithdrawalModel.GetQuote.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
-        public async Task<ActionResult<WithdrawalModel.QuoteItem>> GetQuote(Guid atmId, Guid quoteId)
+        public async Task<ActionResult<WithdrawalModel.GetQuote.Return>> GetQuote(Guid atmId, Guid quoteId)
         {
             var request = new WithdrawalModel.GetQuote.Request { AtmId = atmId, QuoteId = quoteId };
             var result = await _withdrawalService.GetQuote(request);
@@ -51,12 +51,12 @@ namespace Fimple.Atm.Api.Controllers
         /// and may be omitted when the quote offers a single option.
         /// </summary>
         [HttpPost("quotes/{quoteId:guid}/confirm")]
-        [ProducesResponseType(typeof(WithdrawalModel.ConfirmItem), 200)]
+        [ProducesResponseType(typeof(WithdrawalModel.ConfirmQuote.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
         [ProducesResponseType(typeof(ProblemDetails), 422)]
-        public async Task<ActionResult<WithdrawalModel.ConfirmItem>> ConfirmQuote(
+        public async Task<ActionResult<WithdrawalModel.ConfirmQuote.Return>> ConfirmQuote(
             Guid atmId,
             Guid quoteId,
             [FromHeader(Name = WithdrawalRules.IdempotencyKeyHeaderName)] string? idempotencyKey,
@@ -75,10 +75,10 @@ namespace Fimple.Atm.Api.Controllers
         /// Cancels a pending quote and releases its reserved notes.
         /// </summary>
         [HttpPost("quotes/{quoteId:guid}/cancel")]
-        [ProducesResponseType(typeof(WithdrawalModel.QuoteItem), 200)]
+        [ProducesResponseType(typeof(WithdrawalModel.CancelQuote.Return), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 409)]
-        public async Task<ActionResult<WithdrawalModel.QuoteItem>> CancelQuote(Guid atmId, Guid quoteId)
+        public async Task<ActionResult<WithdrawalModel.CancelQuote.Return>> CancelQuote(Guid atmId, Guid quoteId)
         {
             var request = new WithdrawalModel.CancelQuote.Request { AtmId = atmId, QuoteId = quoteId };
             var result = await _withdrawalService.CancelQuote(request);

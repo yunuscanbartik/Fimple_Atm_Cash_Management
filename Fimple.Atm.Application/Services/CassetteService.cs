@@ -21,7 +21,7 @@ namespace Fimple.Atm.Application.Services
             _timeProvider = timeProvider;
         }
 
-        public async Task<AtmModel.AtmDetail> ConfigureCassettes(AtmModel.ConfigureCassettes.Request request)
+        public async Task<AtmModel.ConfigureCassettes.Return> ConfigureCassettes(AtmModel.ConfigureCassettes.Request request)
         {
             CassetteConfigurationValidator.Validate(request.Cassettes);
 
@@ -48,10 +48,10 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return AtmModelMapper.ToAtmDetail(atm);
+            return AtmModelMapper.ToConfigureCassettesReturn(atm);
         }
 
-        public async Task<AtmModel.AtmDetail> LoadCash(AtmModel.LoadCash.Request request)
+        public async Task<AtmModel.LoadCash.Return> LoadCash(AtmModel.LoadCash.Request request)
         {
             await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
@@ -75,10 +75,10 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return AtmModelMapper.ToAtmDetail(atm);
+            return AtmModelMapper.ToLoadCashReturn(atm);
         }
 
-        public async Task<AtmModel.AtmDetail> UnloadCash(AtmModel.UnloadCash.Request request)
+        public async Task<AtmModel.UnloadCash.Return> UnloadCash(AtmModel.UnloadCash.Request request)
         {
             await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
@@ -97,7 +97,7 @@ namespace Fimple.Atm.Application.Services
             await _appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return AtmModelMapper.ToAtmDetail(atm);
+            return AtmModelMapper.ToUnloadCashReturn(atm);
         }
 
         private void ApplyCassetteConfiguration(AtmMachine atm, AtmModel.CassetteConfigItem configuration, DateTime now)

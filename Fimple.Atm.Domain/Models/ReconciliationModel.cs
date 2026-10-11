@@ -10,7 +10,7 @@ namespace Fimple.Atm.Domain.Models
     {
         public class CountItem
         {
-            [Range(1, AtmRules.CassetteCount)]
+            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
             public required int CassettePosition { get; set; }
 
             public Currency? Currency { get; set; }
@@ -47,16 +47,6 @@ namespace Fimple.Atm.Domain.Models
             public required List<LineItem> Lines { get; set; }
         }
 
-        public class Add
-        {
-            public class Request : AtmRequestBase
-            {
-                [Required]
-                [MinLength(1, ErrorMessage = "At least one count is required")]
-                public required List<CountItem> Counts { get; set; }
-            }
-        }
-
         public class Get
         {
             public class Request : AtmRequestBase
@@ -77,6 +67,44 @@ namespace Fimple.Atm.Domain.Models
                 [JsonIgnore]
                 public Guid ReconciliationId { get; set; }
             }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required Guid AtmId { get; set; }
+                public required ReconciliationStatus Status { get; set; }
+                public required decimal TotalDifferenceInBaseCurrency { get; set; }
+                public required bool RequiresApproval { get; set; }
+                public required string CreatedBy { get; set; }
+                public required DateTime CreatedAt { get; set; }
+                public string? ApprovedBy { get; set; }
+                public DateTime? ApprovedAt { get; set; }
+                public required List<LineItem> Lines { get; set; }
+            }
+        }
+
+        public class Add
+        {
+            public class Request : AtmRequestBase
+            {
+                [Required(ErrorMessage = "Counts are required")]
+                [MinLength(1, ErrorMessage = "At least one count is required")]
+                public required List<CountItem> Counts { get; set; }
+            }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required Guid AtmId { get; set; }
+                public required ReconciliationStatus Status { get; set; }
+                public required decimal TotalDifferenceInBaseCurrency { get; set; }
+                public required bool RequiresApproval { get; set; }
+                public required string CreatedBy { get; set; }
+                public required DateTime CreatedAt { get; set; }
+                public string? ApprovedBy { get; set; }
+                public DateTime? ApprovedAt { get; set; }
+                public required List<LineItem> Lines { get; set; }
+            }
         }
 
         public class Approve
@@ -85,6 +113,20 @@ namespace Fimple.Atm.Domain.Models
             {
                 [JsonIgnore]
                 public Guid ReconciliationId { get; set; }
+            }
+
+            public class Return
+            {
+                public required Guid Id { get; set; }
+                public required Guid AtmId { get; set; }
+                public required ReconciliationStatus Status { get; set; }
+                public required decimal TotalDifferenceInBaseCurrency { get; set; }
+                public required bool RequiresApproval { get; set; }
+                public required string CreatedBy { get; set; }
+                public required DateTime CreatedAt { get; set; }
+                public string? ApprovedBy { get; set; }
+                public DateTime? ApprovedAt { get; set; }
+                public required List<LineItem> Lines { get; set; }
             }
         }
     }

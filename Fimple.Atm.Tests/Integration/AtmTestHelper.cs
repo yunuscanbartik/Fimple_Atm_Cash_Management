@@ -65,9 +65,9 @@ namespace Fimple.Atm.Tests.Integration
             return atmId;
         }
 
-        public async Task<AtmModel.AtmDetail> GetDetail(Guid atmId)
+        public async Task<AtmModel.GetDetail.Return> GetDetail(Guid atmId)
         {
-            return await ApiClient.Read<AtmModel.AtmDetail>(await _api.Get($"/api/atms/{atmId}"));
+            return await ApiClient.Read<AtmModel.GetDetail.Return>(await _api.Get($"/api/atms/{atmId}"));
         }
 
         public async Task<AtmModel.CassetteItem> GetCassette(Guid atmId, int position)
@@ -81,11 +81,11 @@ namespace Fimple.Atm.Tests.Integration
             return _api.Post($"/api/atms/{atmId}/withdrawals/quotes", new { cardNumber, currency, amount });
         }
 
-        public async Task<WithdrawalModel.QuoteItem> CreateQuote(Guid atmId, string cardNumber, Currency currency, int amount)
+        public async Task<WithdrawalModel.CreateQuote.Return> CreateQuote(Guid atmId, string cardNumber, Currency currency, int amount)
         {
             var response = await RequestQuote(atmId, cardNumber, currency, amount);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            return await ApiClient.Read<WithdrawalModel.QuoteItem>(response);
+            return await ApiClient.Read<WithdrawalModel.CreateQuote.Return>(response);
         }
 
         public Task<HttpResponseMessage> ConfirmQuote(Guid atmId, Guid quoteId, string idempotencyKey, QuoteOptionType? option = null)

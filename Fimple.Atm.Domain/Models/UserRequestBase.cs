@@ -12,10 +12,4 @@ namespace Fimple.Atm.Domain.Models
             UserName = userName;
         }
     }
-
-    public abstract class AtmRequestBase : UserRequestBase
-    {
-        [JsonIgnore]
-        public Guid AtmId { get; set; }
-    }
 }
