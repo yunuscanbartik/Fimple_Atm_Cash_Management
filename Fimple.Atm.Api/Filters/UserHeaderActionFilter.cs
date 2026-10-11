@@ -5,11 +5,11 @@ namespace Fimple.Atm.Api.Filters
 {
     public class UserHeaderActionFilter : IActionFilter
     {
-        public const string UserHeaderName = "X-User";
+        public const string USER_HEADER_NAME = "X-User";
 
         public void OnActionExecuting(ActionExecutingContext actionExecutingContext)
         {
-            var userName = actionExecutingContext.HttpContext.Request.Headers[UserHeaderName].FirstOrDefault();
+            var userName = actionExecutingContext.HttpContext.Request.Headers[USER_HEADER_NAME].FirstOrDefault();
             var normalizedUserName = string.IsNullOrWhiteSpace(userName) ? null : userName.Trim();
 
             foreach (var argument in actionExecutingContext.ActionArguments.Values)

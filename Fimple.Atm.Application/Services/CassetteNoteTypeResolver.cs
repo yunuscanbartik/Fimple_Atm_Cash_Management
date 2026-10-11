@@ -13,7 +13,7 @@ namespace Fimple.Atm.Application.Services
             {
                 if (requestedCurrency == null || requestedDenomination == null)
                 {
-                    throw new BusinessRuleException(ErrorCodes.NoteTypeRequired,
+                    throw new BusinessRuleException(ErrorCodes.NOTE_TYPE_REQUIRED,
                         $"Cassette {cassette.Position} is the deposit cassette; currency and denomination are required.");
                 }
 
@@ -29,7 +29,7 @@ namespace Fimple.Atm.Application.Services
             var denominationMismatch = requestedDenomination != null && requestedDenomination != cassetteDenomination;
             if (currencyMismatch || denominationMismatch)
             {
-                throw new BusinessRuleException(ErrorCodes.CassetteNoteMismatch,
+                throw new BusinessRuleException(ErrorCodes.CASSETTE_NOTE_MISMATCH,
                     $"Cassette {cassette.Position} only holds {cassetteCurrency} {(int)cassetteDenomination} notes.");
             }
 

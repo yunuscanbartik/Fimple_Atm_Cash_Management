@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class OutboxTests : IntegrationTestBase
     {
         public OutboxTests(ApiFixture fixture) : base(fixture)

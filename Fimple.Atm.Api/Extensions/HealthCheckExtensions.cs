@@ -6,16 +6,16 @@ namespace Fimple.Atm.Api.Extensions
 {
     public static class HealthCheckExtensions
     {
-        private const string ReadinessPath = "/health";
-        private const string LivenessPath = "/health/live";
-        private const string HealthJsonContentType = "application/json";
+        private const string READINESS_PATH = "/health";
+        private const string LIVENESS_PATH = "/health/live";
+        private const string HEALTH_JSON_CONTENT_TYPE = "application/json";
 
         private static readonly JsonSerializerOptions HealthJsonOptions = new(JsonSerializerDefaults.Web);
 
         public static WebApplication MapAtmHealthChecks(this WebApplication app)
         {
-            app.MapHealthChecks(ReadinessPath, new HealthCheckOptions { ResponseWriter = WriteResponse });
-            app.MapHealthChecks(LivenessPath, new HealthCheckOptions { Predicate = _ => false, ResponseWriter = WriteResponse });
+            app.MapHealthChecks(READINESS_PATH, new HealthCheckOptions { ResponseWriter = WriteResponse });
+            app.MapHealthChecks(LIVENESS_PATH, new HealthCheckOptions { Predicate = _ => false, ResponseWriter = WriteResponse });
             return app;
         }
 
@@ -34,7 +34,7 @@ namespace Fimple.Atm.Api.Extensions
                 })
             };
 
-            httpContext.Response.ContentType = HealthJsonContentType;
+            httpContext.Response.ContentType = HEALTH_JSON_CONTENT_TYPE;
             return httpContext.Response.WriteAsync(JsonSerializer.Serialize(response, HealthJsonOptions));
         }
     }

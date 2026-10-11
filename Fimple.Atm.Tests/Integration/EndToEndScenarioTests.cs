@@ -4,7 +4,7 @@ using Fimple.Atm.Domain.Models;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class EndToEndScenarioTests : IntegrationTestBase
     {
         public EndToEndScenarioTests(ApiFixture fixture) : base(fixture)
@@ -68,7 +68,7 @@ namespace Fimple.Atm.Tests.Integration
                         new { cassettePosition = 1, currency = Currency.Eur, denomination = 50, countedNoteCount = 1 }
                     }
                 },
-                (AtmTestHelper.UserHeader, "alice")));
+                (AtmTestHelper.USER_HEADER, "alice")));
             Assert.Equal(ReconciliationStatus.Completed, reconciliation.Status);
             Assert.Equal(0m, reconciliation.TotalDifferenceInBaseCurrency);
 

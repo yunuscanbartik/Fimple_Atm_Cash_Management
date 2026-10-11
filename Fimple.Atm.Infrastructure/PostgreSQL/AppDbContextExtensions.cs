@@ -14,7 +14,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
                 .ToListAsync();
             if (lockedAtmIds.Count == 0)
             {
-                throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {atmId}");
+                throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {atmId}");
             }
 
             return await appDbContext.AtmMachines

@@ -119,9 +119,9 @@ namespace Fimple.Atm.Tests.Integration
         }
     }
 
-    [CollectionDefinition(Name)]
+    [CollectionDefinition(NAME)]
     public class ApiCollection : ICollectionFixture<ApiFixture>
     {
-        public const string Name = "Api";
+        public const string NAME = "Api";
     }
 }

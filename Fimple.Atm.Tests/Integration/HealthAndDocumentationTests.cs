@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class HealthAndDocumentationTests : IntegrationTestBase
     {
         public HealthAndDocumentationTests(ApiFixture fixture) : base(fixture)

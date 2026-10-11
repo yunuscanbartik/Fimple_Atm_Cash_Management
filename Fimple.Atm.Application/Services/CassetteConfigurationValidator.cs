@@ -9,17 +9,17 @@ namespace Fimple.Atm.Application.Services
     {
         public static void Validate(IReadOnlyCollection<AtmModel.CassetteConfigItem> cassetteConfigurations)
         {
-            if (cassetteConfigurations.Count != AtmRules.CassetteCount)
+            if (cassetteConfigurations.Count != AtmRules.CASSETTE_COUNT)
             {
-                throw Invalid($"An ATM must have exactly {AtmRules.CassetteCount} cassettes.");
+                throw Invalid($"An ATM must have exactly {AtmRules.CASSETTE_COUNT} cassettes.");
             }
 
             var positions = cassetteConfigurations.Select(configuration => configuration.Position).Distinct().ToList();
-            var hasAllPositions = positions.Count == AtmRules.CassetteCount
-                && positions.All(position => position >= 1 && position <= AtmRules.CassetteCount);
+            var hasAllPositions = positions.Count == AtmRules.CASSETTE_COUNT
+                && positions.All(position => position >= 1 && position <= AtmRules.CASSETTE_COUNT);
             if (!hasAllPositions)
             {
-                throw Invalid($"Cassette positions must be unique and between 1 and {AtmRules.CassetteCount}.");
+                throw Invalid($"Cassette positions must be unique and between 1 and {AtmRules.CASSETTE_COUNT}.");
             }
 
             var depositCassettes = cassetteConfigurations.Where(configuration => configuration.Kind == CassetteKind.Deposit).ToList();
@@ -42,20 +42,20 @@ namespace Fimple.Atm.Application.Services
                 throw Invalid("Every recycling cassette needs a currency and a denomination.");
             }
 
-            var foreignCurrencyCount = recyclingCassettes.Count(configuration => configuration.Currency != ReconciliationRules.BaseCurrency);
-            var isForeignCountAllowed = foreignCurrencyCount >= AtmRules.MinForeignCurrencyRecyclingCassetteCount
-                && foreignCurrencyCount <= AtmRules.MaxForeignCurrencyRecyclingCassetteCount;
+            var foreignCurrencyCount = recyclingCassettes.Count(configuration => configuration.Currency != ReconciliationRules.BASE_CURRENCY);
+            var isForeignCountAllowed = foreignCurrencyCount >= AtmRules.MIN_FOREIGN_CURRENCY_RECYCLING_CASSETTE_COUNT
+                && foreignCurrencyCount <= AtmRules.MAX_FOREIGN_CURRENCY_RECYCLING_CASSETTE_COUNT;
             if (!isForeignCountAllowed)
             {
                 throw Invalid(
-                    $"Between {AtmRules.MinForeignCurrencyRecyclingCassetteCount} and {AtmRules.MaxForeignCurrencyRecyclingCassetteCount} " +
+                    $"Between {AtmRules.MIN_FOREIGN_CURRENCY_RECYCLING_CASSETTE_COUNT} and {AtmRules.MAX_FOREIGN_CURRENCY_RECYCLING_CASSETTE_COUNT} " +
                     "recycling cassettes must be configured for a foreign currency (USD or EUR).");
             }
         }
 
         private static BusinessRuleException Invalid(string message)
         {
-            return new BusinessRuleException(ErrorCodes.InvalidCassetteConfiguration, message);
+            return new BusinessRuleException(ErrorCodes.INVALID_CASSETTE_CONFIGURATION, message);
         }
     }
 }

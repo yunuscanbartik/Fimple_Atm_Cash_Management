@@ -47,7 +47,7 @@ namespace Fimple.Atm.Application.Services
             var remainingLimit = await GetRemainingDailyLimit(cardHash, request.Currency, now);
             if (request.Amount > remainingLimit)
             {
-                throw new BusinessRuleException(ErrorCodes.DailyLimitExceeded,
+                throw new BusinessRuleException(ErrorCodes.DAILY_LIMIT_EXCEEDED,
                     $"The daily {request.Currency} withdrawal limit is {WithdrawalRules.DailyLimits[request.Currency]}; " +
                     $"{remainingLimit} remains for this card today.");
             }
@@ -56,7 +56,7 @@ namespace Fimple.Atm.Application.Services
             var offeredBreakdowns = GetOfferedBreakdowns(selection, remainingLimit);
             if (offeredBreakdowns.Count == 0)
             {
-                throw new BusinessRuleException(ErrorCodes.InsufficientCash,
+                throw new BusinessRuleException(ErrorCodes.INSUFFICIENT_CASH,
                     $"This ATM cannot pay out any {request.Currency} amount close to {request.Amount} right now.");
             }
 
@@ -112,7 +112,7 @@ namespace Fimple.Atm.Application.Services
                 _quoteReservationReleaser.ReleaseReservation(atm, quote, QuoteStatus.Expired);
                 await _appDbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
-                throw new ConflictException(ErrorCodes.QuoteExpired, "The quote has expired and its reservation was released.");
+                throw new ConflictException(ErrorCodes.QUOTE_EXPIRED, "The quote has expired and its reservation was released.");
             }
 
             EnsureInService(atm, "confirm a withdrawal");
@@ -140,7 +140,7 @@ namespace Fimple.Atm.Application.Services
 
             if (quote.Status == QuoteStatus.Confirmed)
             {
-                throw new ConflictException(ErrorCodes.QuoteNotConfirmable, "A confirmed quote cannot be cancelled.");
+                throw new ConflictException(ErrorCodes.QUOTE_NOT_CONFIRMABLE, "A confirmed quote cannot be cancelled.");
             }
 
             var now = _timeProvider.GetUtcNow().UtcDateTime;
@@ -166,22 +166,22 @@ namespace Fimple.Atm.Application.Services
 
         private static NotFoundException QuoteNotFound(Guid quoteId)
         {
-            return new NotFoundException(ErrorCodes.QuoteNotFound, $"Quote not found: {quoteId}");
+            return new NotFoundException(ErrorCodes.QUOTE_NOT_FOUND, $"Quote not found: {quoteId}");
         }
 
         private static string ValidateIdempotencyKey(string? idempotencyKey)
         {
             if (string.IsNullOrWhiteSpace(idempotencyKey))
             {
-                throw new RequestValidationException(ErrorCodes.IdempotencyKeyRequired,
-                    $"The {WithdrawalRules.IdempotencyKeyHeaderName} header is required to confirm a quote.");
+                throw new RequestValidationException(ErrorCodes.IDEMPOTENCY_KEY_REQUIRED,
+                    $"The {WithdrawalRules.IDEMPOTENCY_KEY_HEADER_NAME} header is required to confirm a quote.");
             }
 
             var trimmedKey = idempotencyKey.Trim();
-            if (trimmedKey.Length > WithdrawalRules.IdempotencyKeyMaxLength)
+            if (trimmedKey.Length > WithdrawalRules.IDEMPOTENCY_KEY_MAX_LENGTH)
             {
-                throw new RequestValidationException(ErrorCodes.IdempotencyKeyRequired,
-                    $"The {WithdrawalRules.IdempotencyKeyHeaderName} header must be at most {WithdrawalRules.IdempotencyKeyMaxLength} characters.");
+                throw new RequestValidationException(ErrorCodes.IDEMPOTENCY_KEY_REQUIRED,
+                    $"The {WithdrawalRules.IDEMPOTENCY_KEY_HEADER_NAME} header must be at most {WithdrawalRules.IDEMPOTENCY_KEY_MAX_LENGTH} characters.");
             }
 
             return trimmedKey;
@@ -193,7 +193,7 @@ namespace Fimple.Atm.Application.Services
                 withdrawalQuote.ConfirmIdempotencyKey == idempotencyKey && withdrawalQuote.Id != quoteId);
             if (keyUsedElsewhere)
             {
-                throw new ConflictException(ErrorCodes.IdempotencyKeyReused,
+                throw new ConflictException(ErrorCodes.IDEMPOTENCY_KEY_REUSED,
                     "This idempotency key was already used to confirm a different quote.");
             }
         }
@@ -202,14 +202,14 @@ namespace Fimple.Atm.Application.Services
         {
             if (quote.Status == QuoteStatus.Pending) return;
 
-            throw new ConflictException(ErrorCodes.QuoteNotConfirmable, $"A {quote.Status} quote cannot be confirmed.");
+            throw new ConflictException(ErrorCodes.QUOTE_NOT_CONFIRMABLE, $"A {quote.Status} quote cannot be confirmed.");
         }
 
         private static void EnsureInService(AtmMachine atm, string action)
         {
             if (atm.Status == AtmStatus.InService) return;
 
-            throw new ConflictException(ErrorCodes.InvalidAtmState, $"Cannot {action} while the ATM is {atm.Status}; it must be {AtmStatus.InService}.");
+            throw new ConflictException(ErrorCodes.INVALID_ATM_STATE, $"Cannot {action} while the ATM is {atm.Status}; it must be {AtmStatus.InService}.");
         }
 
         private WithdrawalModel.ConfirmQuote.Return BuildReplayResponse(WithdrawalQuote quote, AtmMachine atm, QuoteOptionType? requestedOption)
@@ -223,7 +223,7 @@ namespace Fimple.Atm.Application.Services
             var isDifferentRequest = requestedOption.HasValue && requestedOption.Value != confirmedOption.OptionType;
             if (isDifferentRequest)
             {
-                throw new ConflictException(ErrorCodes.IdempotencyKeyReused,
+                throw new ConflictException(ErrorCodes.IDEMPOTENCY_KEY_REUSED,
                     "This idempotency key was already used with a different option for the same quote.");
             }
 
@@ -235,13 +235,13 @@ namespace Fimple.Atm.Application.Services
             if (requestedOption.HasValue)
             {
                 var requested = quote.Options.FirstOrDefault(option => option.OptionType == requestedOption.Value);
-                return requested ?? throw new BusinessRuleException(ErrorCodes.QuoteOptionNotOffered,
+                return requested ?? throw new BusinessRuleException(ErrorCodes.QUOTE_OPTION_NOT_OFFERED,
                     $"The quote does not offer the {requestedOption.Value} option.");
             }
 
             if (quote.Options.Count != 1)
             {
-                throw new BusinessRuleException(ErrorCodes.QuoteOptionRequired,
+                throw new BusinessRuleException(ErrorCodes.QUOTE_OPTION_REQUIRED,
                     "This quote offers several alternatives; choose one with the option field.");
             }
 

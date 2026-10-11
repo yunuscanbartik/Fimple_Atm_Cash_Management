@@ -107,7 +107,7 @@ namespace Fimple.Atm.Application.Services
 
         private static bool IsLowCash(int availableCount, int capacity)
         {
-            return (decimal)availableCount / capacity < AtmRules.LowCashThresholdRatio;
+            return (decimal)availableCount / capacity < AtmRules.LOW_CASH_THRESHOLD_RATIO;
         }
     }
 }

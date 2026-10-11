@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class ConcurrencyTests : IntegrationTestBase
     {
         private const int PARALLEL_REQUEST_COUNT = 30;

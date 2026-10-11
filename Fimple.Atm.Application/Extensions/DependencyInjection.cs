@@ -9,13 +9,13 @@ namespace Fimple.Atm.Application.Extensions
 {
     public static class DependencyInjection
     {
-        private const string CardHashingKeyInvalidMessage = "CardHashing:Key must be configured with at least 32 characters.";
+        private const string CARD_HASHING_KEY_INVALID_MESSAGE = "CardHashing:Key must be configured with at least 32 characters.";
 
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddOptions<CardHashingConfig>()
-                .Bind(configuration.GetSection(CardHashingConfig.SectionName))
-                .Validate(IsCardHashingKeyValid, CardHashingKeyInvalidMessage)
+                .Bind(configuration.GetSection(CardHashingConfig.SECTION_NAME))
+                .Validate(IsCardHashingKeyValid, CARD_HASHING_KEY_INVALID_MESSAGE)
                 .ValidateOnStart();
 
             services.TryAddSingleton(TimeProvider.System);
@@ -36,7 +36,7 @@ namespace Fimple.Atm.Application.Extensions
 
         private static bool IsCardHashingKeyValid(CardHashingConfig cardHashingConfig)
         {
-            return cardHashingConfig.Key.Length >= CardHashingConfig.MinimumKeyLength;
+            return cardHashingConfig.Key.Length >= CardHashingConfig.MINIMUM_KEY_LENGTH;
         }
     }
 }

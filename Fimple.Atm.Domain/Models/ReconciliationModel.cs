@@ -10,7 +10,7 @@ namespace Fimple.Atm.Domain.Models
     {
         public class CountItem
         {
-            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
+            [Range(1, AtmRules.CASSETTE_COUNT, ErrorMessage = "Cassette position must be between 1 and 5")]
             public required int CassettePosition { get; set; }
 
             public Currency? Currency { get; set; }

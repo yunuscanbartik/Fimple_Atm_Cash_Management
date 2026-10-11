@@ -46,7 +46,7 @@ namespace Fimple.Atm.Domain.Models
 
         public class CassetteConfigItem
         {
-            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
+            [Range(1, AtmRules.CASSETTE_COUNT, ErrorMessage = "Cassette position must be between 1 and 5")]
             public required int Position { get; set; }
 
             public required CassetteKind Kind { get; set; }
@@ -59,7 +59,7 @@ namespace Fimple.Atm.Domain.Models
 
         public class CashItem
         {
-            [Range(1, AtmRules.CassetteCount, ErrorMessage = "Cassette position must be between 1 and 5")]
+            [Range(1, AtmRules.CASSETTE_COUNT, ErrorMessage = "Cassette position must be between 1 and 5")]
             public required int CassettePosition { get; set; }
 
             public Currency? Currency { get; set; }
@@ -67,7 +67,7 @@ namespace Fimple.Atm.Domain.Models
             [DefinedDenomination]
             public int? Denomination { get; set; }
 
-            [Range(1, AtmRules.CassetteCapacity, ErrorMessage = "Note count must be between 1 and the cassette capacity")]
+            [Range(1, AtmRules.CASSETTE_CAPACITY, ErrorMessage = "Note count must be between 1 and the cassette capacity")]
             public required int NoteCount { get; set; }
         }
 
@@ -123,8 +123,8 @@ namespace Fimple.Atm.Domain.Models
             public class Request : AtmRequestBase
             {
                 [Required(ErrorMessage = "Cassettes are required")]
-                [MinLength(AtmRules.CassetteCount, ErrorMessage = "Exactly 5 cassettes must be provided")]
-                [MaxLength(AtmRules.CassetteCount, ErrorMessage = "Exactly 5 cassettes must be provided")]
+                [MinLength(AtmRules.CASSETTE_COUNT, ErrorMessage = "Exactly 5 cassettes must be provided")]
+                [MaxLength(AtmRules.CASSETTE_COUNT, ErrorMessage = "Exactly 5 cassettes must be provided")]
                 public required List<CassetteConfigItem> Cassettes { get; set; }
             }
 

@@ -6,7 +6,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
 {
     public class AppDbContext : DbContext
     {
-        public const string AtmsTableName = "t_Atms";
+        public const string ATMS_TABLE_NAME = "t_Atms";
         private const string TIMESTAMP_WITH_TIME_ZONE = "timestamp with time zone";
         private const int ENUM_MAX_LENGTH = 32;
         private const int NAME_MAX_LENGTH = 255;
@@ -61,7 +61,7 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
         {
             var entity = modelBuilder.Entity<AtmMachine>();
 
-            entity.ToTable(AtmsTableName);
+            entity.ToTable(ATMS_TABLE_NAME);
             entity.HasKey(atm => atm.Id);
             entity.Property(atm => atm.Id)
                 .ValueGeneratedNever()

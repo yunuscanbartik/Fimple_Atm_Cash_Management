@@ -2,36 +2,36 @@ namespace Fimple.Atm.Domain.Constants
 {
     public static class ErrorCodes
     {
-        public const string ValidationFailed = "VALIDATION_FAILED";
-        public const string InternalError = "INTERNAL_ERROR";
-        public const string UniqueViolation = "UNIQUE_VIOLATION";
-        public const string ConstraintViolation = "CONSTRAINT_VIOLATION";
-        public const string AtmNotFound = "ATM_NOT_FOUND";
-        public const string AtmNameAlreadyExists = "ATM_NAME_ALREADY_EXISTS";
-        public const string InvalidAtmState = "INVALID_ATM_STATE";
-        public const string InvalidCassetteConfiguration = "INVALID_CASSETTE_CONFIGURATION";
-        public const string CassetteNotFound = "CASSETTE_NOT_FOUND";
-        public const string CassetteNotEmpty = "CASSETTE_NOT_EMPTY";
-        public const string CassetteCapacityExceeded = "CASSETTE_CAPACITY_EXCEEDED";
-        public const string CassetteNoteMismatch = "CASSETTE_NOTE_MISMATCH";
-        public const string InsufficientNotes = "INSUFFICIENT_NOTES";
-        public const string NoteTypeRequired = "NOTE_TYPE_REQUIRED";
-        public const string EmptyDeposit = "EMPTY_DEPOSIT";
-        public const string UserHeaderRequired = "USER_HEADER_REQUIRED";
-        public const string ReconciliationNotFound = "RECONCILIATION_NOT_FOUND";
-        public const string ReconciliationNotPending = "RECONCILIATION_NOT_PENDING";
-        public const string FourEyesViolation = "FOUR_EYES_VIOLATION";
-        public const string InvalidReconciliationCounts = "INVALID_RECONCILIATION_COUNTS";
-        public const string ExchangeRateMissing = "EXCHANGE_RATE_MISSING";
-        public const string ReconciliationAwaitingApproval = "RECONCILIATION_AWAITING_APPROVAL";
-        public const string QuoteNotFound = "QUOTE_NOT_FOUND";
-        public const string QuoteExpired = "QUOTE_EXPIRED";
-        public const string QuoteNotConfirmable = "QUOTE_NOT_CONFIRMABLE";
-        public const string QuoteOptionRequired = "QUOTE_OPTION_REQUIRED";
-        public const string QuoteOptionNotOffered = "QUOTE_OPTION_NOT_OFFERED";
-        public const string DailyLimitExceeded = "DAILY_LIMIT_EXCEEDED";
-        public const string InsufficientCash = "INSUFFICIENT_CASH";
-        public const string IdempotencyKeyRequired = "IDEMPOTENCY_KEY_REQUIRED";
-        public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
+        public const string VALIDATION_FAILED = "VALIDATION_FAILED";
+        public const string INTERNAL_ERROR = "INTERNAL_ERROR";
+        public const string UNIQUE_VIOLATION = "UNIQUE_VIOLATION";
+        public const string CONSTRAINT_VIOLATION = "CONSTRAINT_VIOLATION";
+        public const string ATM_NOT_FOUND = "ATM_NOT_FOUND";
+        public const string ATM_NAME_ALREADY_EXISTS = "ATM_NAME_ALREADY_EXISTS";
+        public const string INVALID_ATM_STATE = "INVALID_ATM_STATE";
+        public const string INVALID_CASSETTE_CONFIGURATION = "INVALID_CASSETTE_CONFIGURATION";
+        public const string CASSETTE_NOT_FOUND = "CASSETTE_NOT_FOUND";
+        public const string CASSETTE_NOT_EMPTY = "CASSETTE_NOT_EMPTY";
+        public const string CASSETTE_CAPACITY_EXCEEDED = "CASSETTE_CAPACITY_EXCEEDED";
+        public const string CASSETTE_NOTE_MISMATCH = "CASSETTE_NOTE_MISMATCH";
+        public const string INSUFFICIENT_NOTES = "INSUFFICIENT_NOTES";
+        public const string NOTE_TYPE_REQUIRED = "NOTE_TYPE_REQUIRED";
+        public const string EMPTY_DEPOSIT = "EMPTY_DEPOSIT";
+        public const string USER_HEADER_REQUIRED = "USER_HEADER_REQUIRED";
+        public const string RECONCILIATION_NOT_FOUND = "RECONCILIATION_NOT_FOUND";
+        public const string RECONCILIATION_NOT_PENDING = "RECONCILIATION_NOT_PENDING";
+        public const string FOUR_EYES_VIOLATION = "FOUR_EYES_VIOLATION";
+        public const string INVALID_RECONCILIATION_COUNTS = "INVALID_RECONCILIATION_COUNTS";
+        public const string EXCHANGE_RATE_MISSING = "EXCHANGE_RATE_MISSING";
+        public const string RECONCILIATION_AWAITING_APPROVAL = "RECONCILIATION_AWAITING_APPROVAL";
+        public const string QUOTE_NOT_FOUND = "QUOTE_NOT_FOUND";
+        public const string QUOTE_EXPIRED = "QUOTE_EXPIRED";
+        public const string QUOTE_NOT_CONFIRMABLE = "QUOTE_NOT_CONFIRMABLE";
+        public const string QUOTE_OPTION_REQUIRED = "QUOTE_OPTION_REQUIRED";
+        public const string QUOTE_OPTION_NOT_OFFERED = "QUOTE_OPTION_NOT_OFFERED";
+        public const string DAILY_LIMIT_EXCEEDED = "DAILY_LIMIT_EXCEEDED";
+        public const string INSUFFICIENT_CASH = "INSUFFICIENT_CASH";
+        public const string IDEMPOTENCY_KEY_REQUIRED = "IDEMPOTENCY_KEY_REQUIRED";
+        public const string IDEMPOTENCY_KEY_REUSED = "IDEMPOTENCY_KEY_REUSED";
     }
 }

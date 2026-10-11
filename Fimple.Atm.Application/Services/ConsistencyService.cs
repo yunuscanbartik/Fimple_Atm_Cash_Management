@@ -27,7 +27,7 @@ namespace Fimple.Atm.Application.Services
             var atmExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Id == request.AtmId);
             if (!atmExists)
             {
-                throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {request.AtmId}");
+                throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {request.AtmId}");
             }
 
             var cassettes = await _appDbContext.Cassettes

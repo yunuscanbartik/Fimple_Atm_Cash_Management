@@ -27,8 +27,8 @@ namespace Fimple.Atm.Application.Services
 
         public string Mask(string cardNumber)
         {
-            var visibleDigits = cardNumber[^WithdrawalRules.MaskedCardVisibleDigitCount..];
-            var maskedLength = cardNumber.Length - WithdrawalRules.MaskedCardVisibleDigitCount;
+            var visibleDigits = cardNumber[^WithdrawalRules.MASKED_CARD_VISIBLE_DIGIT_COUNT..];
+            var maskedLength = cardNumber.Length - WithdrawalRules.MASKED_CARD_VISIBLE_DIGIT_COUNT;
             return new string(MASK_CHARACTER, maskedLength) + visibleDigits;
         }
     }

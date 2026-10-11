@@ -62,7 +62,7 @@ namespace Fimple.Atm.Application.Services
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
             if (atm.Status != AtmStatus.Maintenance)
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"Reconciliation is only allowed while the ATM is {AtmStatus.Maintenance}; it is {atm.Status}.");
             }
 
@@ -107,7 +107,7 @@ namespace Fimple.Atm.Application.Services
             }
 
             reconciliation.TotalDifferenceInBaseCurrency = totalDifferenceInBaseCurrency;
-            var needsApproval = totalDifferenceInBaseCurrency > ReconciliationRules.ApprovalThresholdInBaseCurrency;
+            var needsApproval = totalDifferenceInBaseCurrency > ReconciliationRules.APPROVAL_THRESHOLD_IN_BASE_CURRENCY;
             reconciliation.Status = needsApproval ? ReconciliationStatus.AwaitingApproval : ReconciliationStatus.Completed;
             _appDbContext.Reconciliations.Add(reconciliation);
 
@@ -135,14 +135,14 @@ namespace Fimple.Atm.Application.Services
 
             if (reconciliation.Status != ReconciliationStatus.AwaitingApproval)
             {
-                throw new ConflictException(ErrorCodes.ReconciliationNotPending,
+                throw new ConflictException(ErrorCodes.RECONCILIATION_NOT_PENDING,
                     $"Only a reconciliation that is awaiting approval can be approved; this one is {reconciliation.Status}.");
             }
 
             var isSameUser = string.Equals(reconciliation.CreatedBy, approverName, StringComparison.OrdinalIgnoreCase);
             if (isSameUser)
             {
-                throw new ForbiddenException(ErrorCodes.FourEyesViolation,
+                throw new ForbiddenException(ErrorCodes.FOUR_EYES_VIOLATION,
                     "A reconciliation must be approved by a different user than the one who entered the counts.");
             }
 
@@ -163,7 +163,7 @@ namespace Fimple.Atm.Application.Services
             var atmExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Id == atmId);
             if (!atmExists)
             {
-                throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {atmId}");
+                throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {atmId}");
             }
 
             return await _appDbContext.Cassettes.AsNoTracking().Where(cassette => cassette.AtmId == atmId).ToListAsync();
@@ -171,14 +171,14 @@ namespace Fimple.Atm.Application.Services
 
         private static NotFoundException ReconciliationNotFound(Guid reconciliationId)
         {
-            return new NotFoundException(ErrorCodes.ReconciliationNotFound, $"Reconciliation not found: {reconciliationId}");
+            return new NotFoundException(ErrorCodes.RECONCILIATION_NOT_FOUND, $"Reconciliation not found: {reconciliationId}");
         }
 
         private static string RequireUserName(string? userName)
         {
             if (string.IsNullOrWhiteSpace(userName))
             {
-                throw new RequestValidationException(ErrorCodes.UserHeaderRequired, "The X-User header is required for this operation.");
+                throw new RequestValidationException(ErrorCodes.USER_HEADER_REQUIRED, "The X-User header is required for this operation.");
             }
 
             return userName;
@@ -190,7 +190,7 @@ namespace Fimple.Atm.Application.Services
                 reconciliation.AtmId == atm.Id && reconciliation.Status == ReconciliationStatus.AwaitingApproval);
             if (hasPendingReconciliation)
             {
-                throw new ConflictException(ErrorCodes.ReconciliationAwaitingApproval,
+                throw new ConflictException(ErrorCodes.RECONCILIATION_AWAITING_APPROVAL,
                     "A previous reconciliation for this ATM is still awaiting approval.");
             }
         }
@@ -206,14 +206,14 @@ namespace Fimple.Atm.Application.Services
                 var cassette = atm.Cassettes.FirstOrDefault(atmCassette => atmCassette.Position == countItem.CassettePosition);
                 if (cassette == null)
                 {
-                    throw new NotFoundException(ErrorCodes.CassetteNotFound, $"Cassette {countItem.CassettePosition} is not configured on this ATM.");
+                    throw new NotFoundException(ErrorCodes.CASSETTE_NOT_FOUND, $"Cassette {countItem.CassettePosition} is not configured on this ATM.");
                 }
 
                 var noteType = CassetteNoteTypeResolver.Resolve(cassette, countItem.Currency, CassetteNoteTypeResolver.ToDenomination(countItem.Denomination));
                 var key = (cassette.Id, noteType.Currency, noteType.Denomination);
                 if (!countedNotes.TryAdd(key, countItem.CountedNoteCount))
                 {
-                    throw new BusinessRuleException(ErrorCodes.InvalidReconciliationCounts,
+                    throw new BusinessRuleException(ErrorCodes.INVALID_RECONCILIATION_COUNTS,
                         $"Cassette {cassette.Position} has more than one count for {noteType.Currency} {(int)noteType.Denomination}.");
                 }
             }
@@ -232,7 +232,7 @@ namespace Fimple.Atm.Application.Services
                 .FirstOrDefault(cassette => !countedNotes.Keys.Any(key => key.CassetteId == cassette.Id));
             if (uncountedCassette != null)
             {
-                throw new BusinessRuleException(ErrorCodes.InvalidReconciliationCounts,
+                throw new BusinessRuleException(ErrorCodes.INVALID_RECONCILIATION_COUNTS,
                     $"A count is required for recycling cassette {uncountedCassette.Position}.");
             }
         }
@@ -246,7 +246,7 @@ namespace Fimple.Atm.Application.Services
                 var countedTotal = countedNotes.Where(pair => pair.Key.CassetteId == cassette.Id).Sum(pair => pair.Value);
                 if (countedTotal > cassette.Capacity)
                 {
-                    throw new BusinessRuleException(ErrorCodes.InvalidReconciliationCounts,
+                    throw new BusinessRuleException(ErrorCodes.INVALID_RECONCILIATION_COUNTS,
                         $"Cassette {cassette.Position} cannot hold {countedTotal} notes; its capacity is {cassette.Capacity}.");
                 }
             }
@@ -279,7 +279,7 @@ namespace Fimple.Atm.Application.Services
         {
             if (!rates.TryGetValue(noteType.Currency, out var rate))
             {
-                throw new BusinessRuleException(ErrorCodes.ExchangeRateMissing, $"No exchange rate is configured for {noteType.Currency}.");
+                throw new BusinessRuleException(ErrorCodes.EXCHANGE_RATE_MISSING, $"No exchange rate is configured for {noteType.Currency}.");
             }
 
             return Math.Abs(difference) * (int)noteType.Denomination * rate;

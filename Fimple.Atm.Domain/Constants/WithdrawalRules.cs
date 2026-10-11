@@ -4,10 +4,10 @@ namespace Fimple.Atm.Domain.Constants
 {
     public static class WithdrawalRules
     {
-        public const string CardNumberPattern = @"^\d{12,19}$";
-        public const int MaskedCardVisibleDigitCount = 4;
-        public const int IdempotencyKeyMaxLength = 128;
-        public const string IdempotencyKeyHeaderName = "Idempotency-Key";
+        public const string CARD_NUMBER_PATTERN = @"^\d{12,19}$";
+        public const int MASKED_CARD_VISIBLE_DIGIT_COUNT = 4;
+        public const int IDEMPOTENCY_KEY_MAX_LENGTH = 128;
+        public const string IDEMPOTENCY_KEY_HEADER_NAME = "Idempotency-Key";
 
         public static readonly TimeSpan QuoteValidity = TimeSpan.FromSeconds(60);
 

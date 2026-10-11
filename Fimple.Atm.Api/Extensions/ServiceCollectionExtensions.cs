@@ -8,10 +8,10 @@ namespace Fimple.Atm.Api.Extensions
 {
     public static class ServiceCollectionExtensions
     {
-        private const string ErrorCodeExtensionKey = "errorCode";
-        private const string TraceIdExtensionKey = "traceId";
-        private const string ProblemTypePrefix = "urn:fimple:atm:error:";
-        private const string ValidationFailedTitle = "One or more validation errors occurred.";
+        private const string ERROR_CODE_EXTENSION_KEY = "errorCode";
+        private const string TRACE_ID_EXTENSION_KEY = "traceId";
+        private const string PROBLEM_TYPE_PREFIX = "urn:fimple:atm:error:";
+        private const string VALIDATION_FAILED_TITLE = "One or more validation errors occurred.";
 
         public static IMvcBuilder AddAtmControllers(this IServiceCollection services)
         {
@@ -35,12 +35,12 @@ namespace Fimple.Atm.Api.Extensions
             var problemDetails = new ValidationProblemDetails(actionContext.ModelState)
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = ValidationFailedTitle,
-                Type = ProblemTypePrefix + ErrorCodes.ValidationFailed,
+                Title = VALIDATION_FAILED_TITLE,
+                Type = PROBLEM_TYPE_PREFIX + ErrorCodes.VALIDATION_FAILED,
                 Instance = actionContext.HttpContext.Request.Path
             };
-            problemDetails.Extensions[ErrorCodeExtensionKey] = ErrorCodes.ValidationFailed;
-            problemDetails.Extensions[TraceIdExtensionKey] = actionContext.HttpContext.TraceIdentifier;
+            problemDetails.Extensions[ERROR_CODE_EXTENSION_KEY] = ErrorCodes.VALIDATION_FAILED;
+            problemDetails.Extensions[TRACE_ID_EXTENSION_KEY] = actionContext.HttpContext.TraceIdentifier;
 
             return new BadRequestObjectResult(problemDetails)
             {

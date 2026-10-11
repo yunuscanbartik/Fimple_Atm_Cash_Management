@@ -26,14 +26,14 @@ namespace Fimple.Atm.Application.Services
             var depositLines = MergeLines(request.Notes);
             if (depositLines.Count == 0 && request.UnrecognisedNoteCount == 0)
             {
-                throw new BusinessRuleException(ErrorCodes.EmptyDeposit, "A deposit must contain at least one note.");
+                throw new BusinessRuleException(ErrorCodes.EMPTY_DEPOSIT, "A deposit must contain at least one note.");
             }
 
             await using var transaction = await _appDbContext.Database.BeginTransactionAsync();
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
             if (atm.Status != AtmStatus.InService)
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"Deposits are only accepted while the ATM is {AtmStatus.InService}; it is {atm.Status}.");
             }
 

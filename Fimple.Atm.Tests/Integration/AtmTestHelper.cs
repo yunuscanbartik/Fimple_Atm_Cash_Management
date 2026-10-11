@@ -10,8 +10,8 @@ namespace Fimple.Atm.Tests.Integration
 
     public class AtmTestHelper
     {
-        public const string UserHeader = "X-User";
-        public const string IdempotencyHeader = "Idempotency-Key";
+        public const string USER_HEADER = "X-User";
+        public const string IDEMPOTENCY_HEADER = "Idempotency-Key";
 
         public static readonly CassetteSpec[] StandardCassettes =
         {
@@ -60,7 +60,7 @@ namespace Fimple.Atm.Tests.Integration
         public async Task<Guid> CreateInServiceAtm(CassetteSpec[] cassettes, params LoadItem[] loads)
         {
             var atmId = await CreateConfiguredAtm(cassettes);
-            await ApiClient.EnsureSuccess(await _api.Post($"/api/atms/{atmId}/load", new { items = loads }, (UserHeader, "operator")));
+            await ApiClient.EnsureSuccess(await _api.Post($"/api/atms/{atmId}/load", new { items = loads }, (USER_HEADER, "operator")));
             await ApiClient.EnsureSuccess(await _api.Post($"/api/atms/{atmId}/put-in-service"));
             return atmId;
         }
@@ -91,7 +91,7 @@ namespace Fimple.Atm.Tests.Integration
         public Task<HttpResponseMessage> ConfirmQuote(Guid atmId, Guid quoteId, string idempotencyKey, QuoteOptionType? option = null)
         {
             var body = option.HasValue ? new { option = option.Value } : null;
-            return _api.Post($"/api/atms/{atmId}/withdrawals/quotes/{quoteId}/confirm", body, (IdempotencyHeader, idempotencyKey));
+            return _api.Post($"/api/atms/{atmId}/withdrawals/quotes/{quoteId}/confirm", body, (IDEMPOTENCY_HEADER, idempotencyKey));
         }
 
         public async Task AssertConsistent(Guid atmId)

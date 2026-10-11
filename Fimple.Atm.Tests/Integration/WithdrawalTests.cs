@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class WithdrawalTests : IntegrationTestBase
     {
         private static readonly TimeSpan PastQuoteValidity = TimeSpan.FromSeconds(61);

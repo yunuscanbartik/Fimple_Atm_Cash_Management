@@ -29,7 +29,7 @@ namespace Fimple.Atm.Application.Services
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
             if (!AtmStatusRules.CanConfigureCassettes(atm.Status))
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"Cassettes cannot be configured while the ATM is {atm.Status}. Move it to {AtmStatus.Maintenance} first.");
             }
 
@@ -57,7 +57,7 @@ namespace Fimple.Atm.Application.Services
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
             if (!AtmStatusRules.CanLoadCash(atm.Status))
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"Cash cannot be loaded while the ATM is {atm.Status}. Configure its cassettes first, or move it to {AtmStatus.Maintenance}.");
             }
 
@@ -84,7 +84,7 @@ namespace Fimple.Atm.Application.Services
             var atm = await _appDbContext.LoadAtmForUpdate(request.AtmId);
             if (!AtmStatusRules.CanUnloadCash(atm.Status))
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"Cash cannot be unloaded while the ATM is {atm.Status}. Move it to {AtmStatus.Maintenance} first.");
             }
 
@@ -115,7 +115,7 @@ namespace Fimple.Atm.Application.Services
                     Kind = configuration.Kind,
                     Currency = configuration.Currency,
                     Denomination = denomination,
-                    Capacity = AtmRules.CassetteCapacity,
+                    Capacity = AtmRules.CASSETTE_CAPACITY,
                     CreatedAt = now
                 };
                 atm.Cassettes.Add(cassette);
@@ -131,7 +131,7 @@ namespace Fimple.Atm.Application.Services
             var holdsNotes = cassette.Contents.Any(content => content.NoteCount > 0 || content.ReservedCount > 0);
             if (holdsNotes)
             {
-                throw new BusinessRuleException(ErrorCodes.CassetteNotEmpty,
+                throw new BusinessRuleException(ErrorCodes.CASSETTE_NOT_EMPTY,
                     $"Cassette {cassette.Position} still holds notes and cannot be reconfigured. Unload it first.");
             }
 
@@ -163,7 +163,7 @@ namespace Fimple.Atm.Application.Services
             var currentNoteCount = cassette.Contents.Sum(content => content.NoteCount);
             if (currentNoteCount + item.NoteCount > cassette.Capacity)
             {
-                throw new BusinessRuleException(ErrorCodes.CassetteCapacityExceeded,
+                throw new BusinessRuleException(ErrorCodes.CASSETTE_CAPACITY_EXCEEDED,
                     $"Cassette {cassette.Position} holds {currentNoteCount} notes and has a capacity of {cassette.Capacity}; " +
                     $"{item.NoteCount} more notes do not fit.");
             }
@@ -189,7 +189,7 @@ namespace Fimple.Atm.Application.Services
             var availableCount = content?.AvailableCount ?? 0;
             if (content == null || availableCount < item.NoteCount)
             {
-                throw new BusinessRuleException(ErrorCodes.InsufficientNotes,
+                throw new BusinessRuleException(ErrorCodes.INSUFFICIENT_NOTES,
                     $"Cassette {cassette.Position} has {availableCount} available {noteType.Currency} {(int)noteType.Denomination} notes; " +
                     $"{item.NoteCount} were requested.");
             }
@@ -209,7 +209,7 @@ namespace Fimple.Atm.Application.Services
             var cassette = atm.Cassettes.FirstOrDefault(existingCassette => existingCassette.Position == position);
             if (cassette == null)
             {
-                throw new NotFoundException(ErrorCodes.CassetteNotFound, $"Cassette {position} is not configured on this ATM.");
+                throw new NotFoundException(ErrorCodes.CASSETTE_NOT_FOUND, $"Cassette {position} is not configured on this ATM.");
             }
 
             return cassette;

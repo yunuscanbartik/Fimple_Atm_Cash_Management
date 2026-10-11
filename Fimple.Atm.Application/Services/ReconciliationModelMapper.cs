@@ -76,7 +76,7 @@ namespace Fimple.Atm.Application.Services
 
         private static bool RequiresApproval(Reconciliation reconciliation)
         {
-            return reconciliation.TotalDifferenceInBaseCurrency > ReconciliationRules.ApprovalThresholdInBaseCurrency;
+            return reconciliation.TotalDifferenceInBaseCurrency > ReconciliationRules.APPROVAL_THRESHOLD_IN_BASE_CURRENCY;
         }
 
         private static List<ReconciliationModel.LineItem> ToLineItems(Reconciliation reconciliation, IEnumerable<Cassette> cassettes)

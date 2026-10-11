@@ -59,7 +59,7 @@ namespace Fimple.Atm.Api.Controllers
         public async Task<ActionResult<WithdrawalModel.ConfirmQuote.Return>> ConfirmQuote(
             Guid atmId,
             Guid quoteId,
-            [FromHeader(Name = WithdrawalRules.IdempotencyKeyHeaderName)] string? idempotencyKey,
+            [FromHeader(Name = WithdrawalRules.IDEMPOTENCY_KEY_HEADER_NAME)] string? idempotencyKey,
             [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] WithdrawalModel.ConfirmQuote.Request? request)
         {
             var confirmRequest = request ?? new WithdrawalModel.ConfirmQuote.Request();

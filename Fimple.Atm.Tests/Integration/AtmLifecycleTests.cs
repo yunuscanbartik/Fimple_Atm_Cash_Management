@@ -3,7 +3,7 @@ using Fimple.Atm.Domain.Enums;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class AtmLifecycleTests : IntegrationTestBase
     {
         public AtmLifecycleTests(ApiFixture fixture) : base(fixture)

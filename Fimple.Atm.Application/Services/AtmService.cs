@@ -46,7 +46,7 @@ namespace Fimple.Atm.Application.Services
                 .FirstOrDefaultAsync(atmMachine => atmMachine.Id == request.AtmId);
             if (atm == null)
             {
-                throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {request.AtmId}");
+                throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {request.AtmId}");
             }
 
             return AtmModelMapper.ToGetDetailReturn(atm);
@@ -58,7 +58,7 @@ namespace Fimple.Atm.Application.Services
             var nameExists = await _appDbContext.AtmMachines.AnyAsync(atm => atm.Name == name);
             if (nameExists)
             {
-                throw new ConflictException(ErrorCodes.AtmNameAlreadyExists, $"An ATM named '{name}' already exists.");
+                throw new ConflictException(ErrorCodes.ATM_NAME_ALREADY_EXISTS, $"An ATM named '{name}' already exists.");
             }
 
             var atm = new AtmMachine
@@ -86,7 +86,7 @@ namespace Fimple.Atm.Application.Services
 
             if (!AtmStatusRules.CanPutInService(atm.Status))
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"An ATM in status {atm.Status} cannot be put in service. It must be {AtmStatus.Loaded} or {AtmStatus.Maintenance}.");
             }
 
@@ -112,7 +112,7 @@ namespace Fimple.Atm.Application.Services
 
             if (!AtmStatusRules.CanEnterMaintenance(atm.Status))
             {
-                throw new ConflictException(ErrorCodes.InvalidAtmState,
+                throw new ConflictException(ErrorCodes.INVALID_ATM_STATE,
                     $"An ATM in status {atm.Status} cannot enter maintenance. It must be {AtmStatus.InService}.");
             }
 
@@ -137,7 +137,7 @@ namespace Fimple.Atm.Application.Services
                 reconciliation.AtmId == atm.Id && reconciliation.Status == ReconciliationStatus.AwaitingApproval);
             if (hasPendingReconciliation)
             {
-                throw new ConflictException(ErrorCodes.ReconciliationAwaitingApproval,
+                throw new ConflictException(ErrorCodes.RECONCILIATION_AWAITING_APPROVAL,
                     "The ATM cannot return to service until a different user approves the pending reconciliation.");
             }
         }

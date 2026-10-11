@@ -10,11 +10,11 @@ namespace Fimple.Atm.Api.Middlewares
 {
     public sealed class ExceptionMiddleware
     {
-        private const string ErrorCodeExtensionKey = "errorCode";
-        private const string TraceIdExtensionKey = "traceId";
-        private const string ProblemTypePrefix = "urn:fimple:atm:error:";
-        private const string ProblemJsonContentType = "application/problem+json";
-        private const string InternalErrorDetail = "An unexpected error occurred.";
+        private const string ERROR_CODE_EXTENSION_KEY = "errorCode";
+        private const string TRACE_ID_EXTENSION_KEY = "traceId";
+        private const string PROBLEM_TYPE_PREFIX = "urn:fimple:atm:error:";
+        private const string PROBLEM_JSON_CONTENT_TYPE = "application/problem+json";
+        private const string INTERNAL_ERROR_DETAIL = "An unexpected error occurred.";
 
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionMiddleware> _logger;
@@ -48,7 +48,7 @@ namespace Fimple.Atm.Api.Middlewares
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Unhandled exception on {Path}", httpContext.Request.Path);
-                await WriteProblem(httpContext, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, InternalErrorDetail);
+                await WriteProblem(httpContext, StatusCodes.Status500InternalServerError, ErrorCodes.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL);
             }
         }
 
@@ -59,11 +59,11 @@ namespace Fimple.Atm.Api.Middlewares
             if (!isUniqueViolation && !isCheckViolation)
             {
                 _logger.LogError(dbUpdateException, "Database error {SqlState} on {Path}", postgresException.SqlState, httpContext.Request.Path);
-                await WriteProblem(httpContext, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, InternalErrorDetail);
+                await WriteProblem(httpContext, StatusCodes.Status500InternalServerError, ErrorCodes.INTERNAL_ERROR, INTERNAL_ERROR_DETAIL);
                 return;
             }
 
-            var errorCode = isUniqueViolation ? ErrorCodes.UniqueViolation : ErrorCodes.ConstraintViolation;
+            var errorCode = isUniqueViolation ? ErrorCodes.UNIQUE_VIOLATION : ErrorCodes.CONSTRAINT_VIOLATION;
             _logger.LogWarning(dbUpdateException, "Constraint {ConstraintName} violated on {Path}", postgresException.ConstraintName, httpContext.Request.Path);
             await WriteProblem(httpContext, StatusCodes.Status409Conflict, errorCode,
                 $"The operation conflicts with existing data (constraint {postgresException.ConstraintName}).");
@@ -89,16 +89,16 @@ namespace Fimple.Atm.Api.Middlewares
             {
                 Status = statusCode,
                 Title = ReasonPhrases.GetReasonPhrase(statusCode),
-                Type = ProblemTypePrefix + errorCode,
+                Type = PROBLEM_TYPE_PREFIX + errorCode,
                 Detail = detail,
                 Instance = httpContext.Request.Path
             };
-            problemDetails.Extensions[ErrorCodeExtensionKey] = errorCode;
-            problemDetails.Extensions[TraceIdExtensionKey] = httpContext.TraceIdentifier;
+            problemDetails.Extensions[ERROR_CODE_EXTENSION_KEY] = errorCode;
+            problemDetails.Extensions[TRACE_ID_EXTENSION_KEY] = httpContext.TraceIdentifier;
 
             httpContext.Response.Clear();
             httpContext.Response.StatusCode = statusCode;
-            await httpContext.Response.WriteAsJsonAsync(problemDetails, options: null, contentType: ProblemJsonContentType);
+            await httpContext.Response.WriteAsJsonAsync(problemDetails, options: null, contentType: PROBLEM_JSON_CONTENT_TYPE);
         }
     }
 }

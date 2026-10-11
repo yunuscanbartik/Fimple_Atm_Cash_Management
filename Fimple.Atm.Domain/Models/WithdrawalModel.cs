@@ -27,7 +27,7 @@ namespace Fimple.Atm.Domain.Models
         {
             public class Request : AtmRequestBase
             {
-                [RegularExpression(WithdrawalRules.CardNumberPattern, ErrorMessage = "Card number must be 12 to 19 digits")]
+                [RegularExpression(WithdrawalRules.CARD_NUMBER_PATTERN, ErrorMessage = "Card number must be 12 to 19 digits")]
                 public required string CardNumber { get; set; }
 
                 public required Currency Currency { get; set; }

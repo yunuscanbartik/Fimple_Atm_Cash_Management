@@ -4,7 +4,7 @@ using Fimple.Atm.Domain.Models;
 
 namespace Fimple.Atm.Tests.Integration
 {
-    [Collection(ApiCollection.Name)]
+    [Collection(ApiCollection.NAME)]
     public class DepositAndReconciliationTests : IntegrationTestBase
     {
         public DepositAndReconciliationTests(ApiFixture fixture) : base(fixture)
@@ -67,7 +67,7 @@ namespace Fimple.Atm.Tests.Integration
             Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
             Assert.Equal("RECONCILIATION_AWAITING_APPROVAL", await ApiClient.ErrorCode(blocked));
 
-            var selfApproval = await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve", null, (AtmTestHelper.UserHeader, "ALICE"));
+            var selfApproval = await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve", null, (AtmTestHelper.USER_HEADER, "ALICE"));
             Assert.Equal(HttpStatusCode.Forbidden, selfApproval.StatusCode);
             Assert.Equal("FOUR_EYES_VIOLATION", await ApiClient.ErrorCode(selfApproval));
 
@@ -75,7 +75,7 @@ namespace Fimple.Atm.Tests.Integration
             Assert.Equal(HttpStatusCode.BadRequest, noUser.StatusCode);
 
             var approved = await ApiClient.Read<ReconciliationModel.Approve.Return>(
-                await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve", null, (AtmTestHelper.UserHeader, "bob")));
+                await Api.Post($"/api/atms/{atmId}/reconciliations/{reconciliation.Id}/approve", null, (AtmTestHelper.USER_HEADER, "bob")));
             Assert.Equal(ReconciliationStatus.Approved, approved.Status);
             Assert.Equal("bob", approved.ApprovedBy);
 
@@ -89,7 +89,7 @@ namespace Fimple.Atm.Tests.Integration
         {
             var inServiceAtmId = await Atms.CreateInServiceAtm(AtmTestHelper.StandardCassettes, new LoadItem(2, 5));
             var wrongState = await Api.Post($"/api/atms/{inServiceAtmId}/reconciliations",
-                new { counts = new[] { new { cassettePosition = 2, countedNoteCount = 5 } } }, (AtmTestHelper.UserHeader, "alice"));
+                new { counts = new[] { new { cassettePosition = 2, countedNoteCount = 5 } } }, (AtmTestHelper.USER_HEADER, "alice"));
             Assert.Equal(HttpStatusCode.Conflict, wrongState.StatusCode);
 
             var atmId = await CreateAtmInMaintenance();
@@ -98,7 +98,7 @@ namespace Fimple.Atm.Tests.Integration
             Assert.Equal("USER_HEADER_REQUIRED", await ApiClient.ErrorCode(noUser));
 
             var incomplete = await Api.Post($"/api/atms/{atmId}/reconciliations",
-                new { counts = new[] { new { cassettePosition = 2, countedNoteCount = 5 } } }, (AtmTestHelper.UserHeader, "alice"));
+                new { counts = new[] { new { cassettePosition = 2, countedNoteCount = 5 } } }, (AtmTestHelper.USER_HEADER, "alice"));
             Assert.Equal(HttpStatusCode.UnprocessableEntity, incomplete.StatusCode);
             Assert.Equal("INVALID_RECONCILIATION_COUNTS", await ApiClient.ErrorCode(incomplete));
         }
@@ -144,7 +144,7 @@ namespace Fimple.Atm.Tests.Integration
                     new { cassettePosition = 4, countedNoteCount = pos4 },
                     new { cassettePosition = 5, countedNoteCount = pos5 }
                 }
-            }, (AtmTestHelper.UserHeader, userName));
+            }, (AtmTestHelper.USER_HEADER, userName));
             return await ApiClient.Read<ReconciliationModel.Add.Return>(response);
         }
     }

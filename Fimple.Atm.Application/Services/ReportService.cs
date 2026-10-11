@@ -33,7 +33,7 @@ namespace Fimple.Atm.Application.Services
             return new ReportModel.Operations.Return
             {
                 GeneratedAt = _timeProvider.GetUtcNow().UtcDateTime,
-                BaseCurrency = ReconciliationRules.BaseCurrency,
+                BaseCurrency = ReconciliationRules.BASE_CURRENCY,
                 Atms = atmReports,
                 Totals = overallTotals,
                 TotalInBaseCurrency = atmReports.Sum(atmReport => atmReport.TotalInBaseCurrency)
@@ -56,7 +56,7 @@ namespace Fimple.Atm.Application.Services
             var atms = await query.OrderBy(atm => atm.Name).ToListAsync();
             if (atmId.HasValue && atms.Count == 0)
             {
-                throw new NotFoundException(ErrorCodes.AtmNotFound, $"ATM not found: {atmId.Value}");
+                throw new NotFoundException(ErrorCodes.ATM_NOT_FOUND, $"ATM not found: {atmId.Value}");
             }
 
             return atms;
@@ -115,7 +115,7 @@ namespace Fimple.Atm.Application.Services
             {
                 if (!rates.TryGetValue(total.Currency, out var rate))
                 {
-                    throw new BusinessRuleException(ErrorCodes.ExchangeRateMissing, $"No exchange rate is configured for {total.Currency}.");
+                    throw new BusinessRuleException(ErrorCodes.EXCHANGE_RATE_MISSING, $"No exchange rate is configured for {total.Currency}.");
                 }
 
                 totalInBaseCurrency += total.Amount * rate;

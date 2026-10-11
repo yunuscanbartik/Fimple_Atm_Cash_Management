@@ -74,7 +74,7 @@ namespace Fimple.Atm.Api.Controllers
         public async Task<ActionResult<ReconciliationModel.Approve.Return>> ApproveReconciliation(Guid atmId, Guid reconciliationId)
         {
             var request = new ReconciliationModel.Approve.Request { AtmId = atmId, ReconciliationId = reconciliationId };
-            request.SetUserName(Request.Headers[Filters.UserHeaderActionFilter.UserHeaderName].FirstOrDefault()?.Trim());
+            request.SetUserName(Request.Headers[Filters.UserHeaderActionFilter.USER_HEADER_NAME].FirstOrDefault()?.Trim());
             var result = await _reconciliationService.ApproveReconciliation(request);
             return Ok(result);
         }

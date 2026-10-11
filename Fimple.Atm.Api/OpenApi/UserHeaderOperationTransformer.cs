@@ -6,10 +6,10 @@ namespace Fimple.Atm.Api.OpenApi
 {
     public class UserHeaderOperationTransformer : IOpenApiOperationTransformer
     {
-        private const string ReconciliationSegment = "reconciliations";
-        private const string LoadSuffix = "/load";
-        private const string UnloadSuffix = "/unload";
-        private const string PostMethod = "POST";
+        private const string RECONCILIATION_SEGMENT = "reconciliations";
+        private const string LOAD_SUFFIX = "/load";
+        private const string UNLOAD_SUFFIX = "/unload";
+        private const string POST_METHOD = "POST";
 
         public Task TransformAsync(
             OpenApiOperation operation,
@@ -17,15 +17,15 @@ namespace Fimple.Atm.Api.OpenApi
             CancellationToken cancellationToken)
         {
             var path = operationTransformerContext.Description.RelativePath ?? string.Empty;
-            var isPost = operationTransformerContext.Description.HttpMethod == PostMethod;
-            var isReconciliationWrite = isPost && path.Contains(ReconciliationSegment);
-            var isCashMovement = path.EndsWith(LoadSuffix) || path.EndsWith(UnloadSuffix);
+            var isPost = operationTransformerContext.Description.HttpMethod == POST_METHOD;
+            var isReconciliationWrite = isPost && path.Contains(RECONCILIATION_SEGMENT);
+            var isCashMovement = path.EndsWith(LOAD_SUFFIX) || path.EndsWith(UNLOAD_SUFFIX);
             if (!isReconciliationWrite && !isCashMovement) return Task.CompletedTask;
 
             operation.Parameters ??= new List<IOpenApiParameter>();
             operation.Parameters.Add(new OpenApiParameter
             {
-                Name = UserHeaderActionFilter.UserHeaderName,
+                Name = UserHeaderActionFilter.USER_HEADER_NAME,
                 In = ParameterLocation.Header,
                 Required = isReconciliationWrite,
                 Description = isReconciliationWrite
