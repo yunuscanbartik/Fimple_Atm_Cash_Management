@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 # Local docker-compose overrides
 .env
+
+# Local machine settings (passwords); copy appsettings.Local.example.json to create it
+appsettings.Local.json

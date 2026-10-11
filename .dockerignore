@@ -11,3 +11,5 @@ Fimple.Atm.Tests/
 postman/
 docker-compose*.yml
 Dockerfile
+**/appsettings.Local.json
+appsettings.Local*.json

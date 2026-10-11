@@ -28,10 +28,15 @@ The API applies the EF Core migrations on startup, so there is nothing to prepar
 
 ### Without Docker
 
-You need the .NET 10 SDK and a PostgreSQL server. Keep the connection string out of the repository by storing it as a user secret (the API and the worker share the same secret store):
+You need the .NET 10 SDK and a PostgreSQL server. Your database password goes into `appsettings.Local.json` in the repository root. The file is git-ignored; create it from the committed example and replace the password:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:PostgreSql" "Host=localhost;Port=5432;Database=fimple_atm;Username=postgres;Password=<password>" --project Fimple.Atm.Api
+cp appsettings.Local.example.json appsettings.Local.json
+```
+
+In the Development environment the API, the worker and the tests find this file automatically and it overrides `appsettings.Development.json`, which only holds a `CHANGE_ME` placeholder. An environment variable such as `ConnectionStrings__PostgreSql` still wins over both.
+
+```bash
 dotnet run --project Fimple.Atm.Api --launch-profile http      # http://localhost:5272/swagger
 dotnet run --project Fimple.Atm.Worker                          # quote expiry and outbox
 ```
@@ -46,7 +51,7 @@ dotnet test
 
 The suite has 55 tests: 21 unit tests (the note selector, including the eight B3 acceptance cases, and the deposit allocator) and 34 integration tests that run against a real PostgreSQL database.
 
-The integration tests create and drop their own database, `fimple_atm_test`, boot the API in-process with `WebApplicationFactory` and a fake clock, and drive it over HTTP. They take the connection string from the `FIMPLE_TEST_CONNECTION_STRING` environment variable, or from the `ConnectionStrings:PostgreSql` user secret of the API. The user needs the right to create databases. For example, against the compose database:
+The integration tests create and drop their own database, `fimple_atm_test`, boot the API in-process with `WebApplicationFactory` and a fake clock, and drive it over HTTP. They take the connection string from the `FIMPLE_TEST_CONNECTION_STRING` environment variable, or from `appsettings.Local.json` (see above). The user needs the right to create databases. For example, against the compose database:
 
 ```bash
 docker compose up -d postgres

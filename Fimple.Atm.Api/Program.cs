@@ -5,6 +5,11 @@ using Fimple.Atm.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddLocalSettings(builder.Environment.ContentRootPath);
+}
+
 builder.Services.AddAtmControllers();
 builder.Services.AddAtmOpenApi();
 builder.Services.AddPostgresDatabase(builder.Configuration.GetConnectionString("PostgreSql"));

@@ -1,3 +1,4 @@
+using Fimple.Atm.Infrastructure.Extensions;
 using Fimple.Atm.Infrastructure.PostgreSQL;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -75,6 +76,7 @@ namespace Fimple.Atm.Tests.Integration
         {
             var configuration = new ConfigurationBuilder()
                 .AddUserSecrets(typeof(Program).Assembly)
+                .AddLocalSettings(AppContext.BaseDirectory)
                 .AddEnvironmentVariables()
                 .Build();
 
@@ -83,7 +85,7 @@ namespace Fimple.Atm.Tests.Integration
             {
                 throw new InvalidOperationException(
                     $"No PostgreSQL connection string for the integration tests. Set the {TEST_CONNECTION_STRING_VARIABLE} environment variable " +
-                    $"or the {CONNECTION_STRING_KEY} user secret of Fimple.Atm.Api.");
+                    $"or create appsettings.Local.json in the repository root (see appsettings.Local.example.json).");
             }
 
             return connectionString;
