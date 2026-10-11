@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-Fimple.Atm.Worker-3051698e-e38e-4b81-9923-84d6f9fe9796</UserSecretsId>
+    <UserSecretsId>b33b9cba-50d8-444f-9300-529dd190374f</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

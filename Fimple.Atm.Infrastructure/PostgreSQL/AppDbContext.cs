@@ -273,6 +273,10 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
             entity.Property(quote => quote.UpdatedAt)
                 .HasColumnType(TIMESTAMP_WITH_TIME_ZONE)
                 .HasColumnOrder(11);
+            entity.Property(quote => quote.LimitAmount)
+                .IsRequired()
+                .HasPrecision(MONEY_PRECISION, MONEY_SCALE)
+                .HasColumnOrder(12);
 
             entity.HasIndex(quote => new { quote.AtmId, quote.Status });
             entity.HasIndex(quote => new { quote.CardHash, quote.Currency, quote.CreatedAt });

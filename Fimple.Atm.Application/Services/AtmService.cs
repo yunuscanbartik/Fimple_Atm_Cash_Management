@@ -12,11 +12,13 @@ namespace Fimple.Atm.Application.Services
     public class AtmService : IAtmService
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IQuoteReservationReleaser _quoteReservationReleaser;
         private readonly TimeProvider _timeProvider;
 
-        public AtmService(AppDbContext appDbContext, TimeProvider timeProvider)
+        public AtmService(AppDbContext appDbContext, IQuoteReservationReleaser quoteReservationReleaser, TimeProvider timeProvider)
         {
             _appDbContext = appDbContext;
+            _quoteReservationReleaser = quoteReservationReleaser;
             _timeProvider = timeProvider;
         }
 
@@ -113,6 +115,8 @@ namespace Fimple.Atm.Application.Services
                 throw new ConflictException(ErrorCodes.InvalidAtmState,
                     $"An ATM in status {atm.Status} cannot enter maintenance. It must be {AtmStatus.InService}.");
             }
+
+            await _quoteReservationReleaser.ReleasePendingQuotes(atm, QuoteStatus.Cancelled);
 
             atm.Status = AtmStatus.Maintenance;
             atm.UpdatedAt = _timeProvider.GetUtcNow().UtcDateTime;

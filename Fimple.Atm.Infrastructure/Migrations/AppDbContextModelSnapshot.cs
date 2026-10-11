@@ -485,6 +485,11 @@ namespace Fimple.Atm.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnOrder(10);
 
+                    b.Property<decimal>("LimitAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnOrder(12);
+
                     b.Property<string>("MaskedCardNumber")
                         .IsRequired()
                         .HasMaxLength(32)

@@ -17,5 +17,14 @@ namespace Fimple.Atm.Domain.Constants
         public const string InsufficientNotes = "INSUFFICIENT_NOTES";
         public const string NoteTypeRequired = "NOTE_TYPE_REQUIRED";
         public const string ReconciliationAwaitingApproval = "RECONCILIATION_AWAITING_APPROVAL";
+        public const string QuoteNotFound = "QUOTE_NOT_FOUND";
+        public const string QuoteExpired = "QUOTE_EXPIRED";
+        public const string QuoteNotConfirmable = "QUOTE_NOT_CONFIRMABLE";
+        public const string QuoteOptionRequired = "QUOTE_OPTION_REQUIRED";
+        public const string QuoteOptionNotOffered = "QUOTE_OPTION_NOT_OFFERED";
+        public const string DailyLimitExceeded = "DAILY_LIMIT_EXCEEDED";
+        public const string InsufficientCash = "INSUFFICIENT_CASH";
+        public const string IdempotencyKeyRequired = "IDEMPOTENCY_KEY_REQUIRED";
+        public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
     }
 }

@@ -11,6 +11,7 @@ namespace Fimple.Atm.Domain.Entities
         public required string MaskedCardNumber { get; set; }
         public Currency Currency { get; set; }
         public decimal RequestedAmount { get; set; }
+        public decimal LimitAmount { get; set; }
         public QuoteStatus Status { get; set; }
         public Guid? ConfirmedOptionId { get; set; }
         public string? ConfirmIdempotencyKey { get; set; }

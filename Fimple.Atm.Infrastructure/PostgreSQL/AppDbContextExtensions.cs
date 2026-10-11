@@ -22,5 +22,10 @@ namespace Fimple.Atm.Infrastructure.PostgreSQL
                 .ThenInclude(cassette => cassette.Contents)
                 .SingleAsync(atm => atm.Id == atmId);
         }
+
+        public static async Task LockCardForUpdate(this AppDbContext appDbContext, string cardHash)
+        {
+            await appDbContext.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({cardHash}, 0))");
+        }
     }
 }

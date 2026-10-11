@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddAtmControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddPostgresDatabase(builder.Configuration.GetConnectionString("PostgreSql"));
-builder.Services.AddApplicationServices();
+builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
