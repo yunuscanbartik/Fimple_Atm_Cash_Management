@@ -1,0 +1,6 @@
+@Fimple_Atm_Cash_Management_HostAddress = http://localhost:5272
+
+GET {{Fimple_Atm_Cash_Management_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
